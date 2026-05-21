@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <title>Otázky k ústní zkoušce – Síťové technologie II</title>
+    <style>
+        :root { --primary: #1a73e8; --bg: #f8f9fa; --text: #202124; --accent: #34a853; --warning: #ea4335; --dark-blue: #0d47a1; --purple: #6a1b9a; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg); margin: 0; display: flex; height: 100vh; overflow: hidden; color: var(--text); }
+        
+        #sidebar { width: 340px; background: #fff; border-right: 1px solid #dadce0; display: flex; flex-direction: column; padding: 15px; overflow-y: auto; }
+        #sidebar h3 { margin-top: 10px; margin-bottom: 5px; color: var(--text); font-size: 1.1em; border-bottom: 1px solid #dadce0; padding-bottom: 5px; }
+        .nav-grid { display: flex; flex-direction: column; gap: 4px; margin-top: 10px; margin-bottom: 20px; }
+        .nav-item { padding: 8px 12px; border: 1px solid #dadce0; border-radius: 6px; cursor: pointer; font-size: 0.85em; transition: 0.2s; background: white; text-align: left; line-height: 1.3; }
+        .nav-item:hover { background: #f1f3f4; border-color: var(--primary); }
+        .nav-item.active { background: var(--primary); color: white; border-color: var(--primary); }
+        .nav-item.michalek.active { background: var(--purple); border-color: var(--purple); }
+        .nav-item.machnik.active { background: var(--dark-blue); border-color: var(--dark-blue); }
+
+        #main-content { flex: 1; padding: 40px; overflow-y: auto; scroll-behavior: smooth; }
+        .header { background: linear-gradient(135deg, var(--dark-blue) 0%, var(--purple) 100%); color: white; padding: 30px; border-radius: 0 0 15px 15px; margin: -40px -40px 30px -40px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        
+        .study-card { background: #fff; border-radius: 12px; padding: 35px; margin-bottom: 50px; border: 1px solid #dadce0; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .study-card h2 { margin-top: 0; border-bottom: 2px solid #eee; padding-bottom: 10px; font-size: 1.4em; }
+        .study-card.michalek h2 { color: var(--purple); }
+        .study-card.machnik h2 { color: var(--dark-blue); }
+        
+        .key-points { list-style-type: none; padding: 0; }
+        .key-points li { margin-bottom: 12px; padding-left: 25px; position: relative; line-height: 1.5; }
+        .key-points li::before { content: '•'; font-weight: bold; font-size: 1.5em; position: absolute; left: 0; top: -5px; }
+        .study-card.michalek .key-points li::before { color: var(--purple); }
+        .study-card.machnik .key-points li::before { color: var(--dark-blue); }
+        
+        .expert-tip { padding: 15px; margin-top: 20px; border-radius: 4px; font-size: 0.95em; }
+        .study-card.michalek .expert-tip { background: #f3e5f5; border-left: 5px solid var(--purple); }
+        .study-card.machnik .expert-tip { background: #e3f2fd; border-left: 5px solid var(--dark-blue); }
+        
+        .formula { background: #f1f3f4; padding: 2px 6px; border-radius: 4px; font-family: 'Courier New', Courier, monospace; color: #c62828; font-weight: bold; }
+        .category-label { font-size: 0.75em; text-transform: uppercase; color: white; font-weight: bold; margin-bottom: 15px; display: inline-block; padding: 3px 8px; border-radius: 4px; }
+        .category-label.michalek { background: var(--purple); }
+        .category-label.machnik { background: var(--dark-blue); }
+    </style>
+</head>
+<body>
+
+<div id="sidebar">
+    <h3>Zkoušející: Ing. Libor Michalek, Ph.D.</h3>
+    <div id="navMichalek" class="nav-grid"></div>
+    
+    <h3>Zkoušející: Ing. Petr Machník, Ph.D.</h3>
+    <div id="navMachnik" class="nav-grid"></div>
+</div>
+
+<div id="main-content">
+    <div class="header">
+        <h1>Skripta pro ústní zkoušku z STII (minulé roky)</h1>
+        <p>Otázky a odpovědi strukturované podle reálných požadavků zkoušejících a oficiálních přednášek.</p>
+    </div>
+    <div id="content-area"></div>
+</div>
+
+<script>
+const topics = [
+    {
+        author: "michalek",
+        title: "M1. Firewall – princip fungování a typy (HW vs. SW)",
+        points: [
+            "Network Firewall je systém nebo skupina systémů určených k řízení přístupu mezi dvěma sítěmi (důvěryhodnou a nedůvěryhodnou) na základě předem nakonfigurovaných pravidel nebo filtrů. Mohou být realizovány jako hardwarová i softwarová řešení.",
+            "Firewall filtruje paket na základě informací obsažených v záhlaví každého jednotlivého paketu: zdrojové IP adresy, cílové IP adresy, typu protokolu (TCP/UDP), zdrojového portu a cílového portu.",
+            "Z hlediska bezpečnostního návrhu existují dva logické přístupy: 1) Vše, co není explicitně povoleno, je zakázáno (implicitní deny). 2) Vše, co není explicitně zakázáno, je povoleno.",
+            "Historicky se technologie firewallů objevila na konci 80. let s rozvojem internetu. Jedním z milníků byl produkt PIX (Private Internet EXchange) společnosti Cisco vydaný v roce 1997.",
+            "Softwarové firewally běží jako aplikace na obecném operačním systému (např. IPTables v Linuxu), zatímco hardwarové firewally jsou specializovaná, dedikovaná síťová zařízení s optimalizovaným výkonem pro propustnost dat."
+        ],
+        tip: "U zkoušky Michálek klade velký důraz na bezpečnostní logiku 'vše co není povoleno, je zakázáno', která se uplatňuje u drtivé většiny produkčních firewallů."
+    },
+    {
+        author: "michalek",
+        title: "M2. Stavový (Stateful) vs. Bezstavový (Stateless) paketový filtr",
+        points: [
+            "Bezstavový (Stateless) firewall neudržuje žádný zapamatovaný kontext (stav) ve vztahu k paketům, které právě zpracovává. Každý paket posuzuje striktně izolovaně.",
+            "Stavový (Stateful) firewall udržuje záznamy o všech aktivních spojeních procházejících skrze něj (tzv. stavová tabulka / state table). Dokáže detekovat, zda je příchozí paket začátkem nového spojení, součástí již existujícího spojení, nebo zda jde o nevalidní paket.",
+            "Filtrování stavového firewallu probíhá porovnáváním parametrů paketu vůči validním stavům v tabulce spojení. Mezi ukládané stavové informace patří zdrojová/cílová IP adresa, porty, protokol, TCP příznaky, sekvenční čísla a čísla potvrzení (ACK), případně typy a kódy zpráv ICMP.",
+            "Spojení založená na TCP jsou snadno sledovatelná díky explicitnímu navazování spojení pomocí paketu TCP SYN (proces TCP-3Way-Handshake mění stavy z SYN-SENT přes SYN-RECEIVED až do ESTABLISHED).",
+            "U provozu založeného na UDP neexistuje žádný nativní mechanismus navazování spojení na transportní vrstvě, stavový firewall zde proto stavy emuluje na základě časových limitů (timeouts) mezi po sobě jdoucími pakety stejné dvojice adres a portů."
+        ],
+        tip: "Vysvětlete, že stavový firewall je řádově bezpečnější, protože automaticky propouští zpětný provoz pouze pro komunikaci, kterou inicioval vnitřní legitimní klient."
+    },
+    {
+        author: "michalek",
+        title: "M3. Architektura Linux Netfilter a IPTables",
+        points: [
+            "Netfilter je projekt v rámci jádra Linuxu, který poskytuje framework pro filtrování paketů, překlad adres a portů (NAT/NAPT), logování a modifikaci paketů. Obsahuje tzv. Netfilter hooks (háčky) uvnitř kernelu.",
+            "IPTables je generický nástroj příkazové řádky určený pro správu tabulek pravidel firewallu v Linuxu. Jeho nástupcem je modernější a flexibilnější systém nftables.",
+            "Struktura IPTables se dělí na tabulky (Tables), z nichž nejdůležitější jsou: <span class='formula'>filter</span> (zodpovědná za samotné filtrování), <span class='formula'>nat</span> (zodpovědná za překlad IP adres) a <span class='formula'>mangle</span> (zodpovědná za modifikaci obsahu/hlaviček paketů).",
+            "Každá tabulka obsahuje vestavěné řetězce (Chains) definující fázi zpracování paketu: <span class='formula'>PREROUTING</span> (ihned po příchodu paketu na rozhraní), <span class='formula'>INPUT</span> (před předáním paketu lokálnímu procesu), <span class='formula'>FORWARD</span> (pro pakety směrované skrze hosta), <span class='formula'>OUTPUT</span> (ihned po vygenerování paketu lokálním procesem) a <span class='formula'>POSTROUTING</span> (těsně před opuštěním rozhraní).",
+            "Základní syntaxe příkazu: <span class='formula'>iptables --table TABLE -A CHAIN rule --jump Target</span>. Příklad pravidla pro zahození ICMP: <span class='formula'>iptables -A INPUT -p icmp -j DROP</span>. Cílem (Target) může být ACCEPT, DROP, REJECT nebo skok do NAT akcí (DNAT/SNAT/MASQUERADE)."
+        ],
+        tip: "Zapamatujte si tok paketu: pokud paket pouze prochází skrze Linux router, uplatní se řetězec FORWARD, nikoliv INPUT nebo OUTPUT."
+    },
+    {
+        author: "michalek",
+        title: "M4. MikroTik RouterOS Firewall a stavové řetězce",
+        points: [
+            "Firewall ve filtrování paketů na platformě MikroTik se skládá ze tří předdefinovaných řetězců (chains), které nelze smazat: INPUT, FORWARD a OUTPUT. Jejich chování plně odpovídá konceptu Linux Netfilter.",
+            "Řetězec <span class='formula'>INPUT</span> zpracovává pakety, které vstupují do routeru a jsou adresovány přímo jedné z IP adres samotného routeru. Procházející tranzitní provoz se v něm nevyhodnocuje.",
+            "Řetězec <span class='formula'>FORWARD</span> zpracovává pakety, které routerem pouze procházejí (jsou směrovány z jednoho rozhraní na druhé).",
+            "Řetězec <span class='formula'>OUTPUT</span> zpracovává pakety, které na routeru přímo vznikly (byly generovány samotným operačním systémem RouterOS) a odcházejí skrze jedno z rozhraní ven.",
+            "Podporované akce (Actions) při shodě paketu s pravidlem: <span class='formula'>accept</span> (přijetí), <span class='formula'>drop</span> (tiché zahození), <span class='formula'>reject</span> (zahození s odesláním ICMP chybové zprávy), <span class='formula'>log</span> (zápis do systémového logu), <span class='formula'>passthrough</span> (přechod na další pravidlo, slouží pro statistiky), <span class='formula'>tarpit</span> (udržování otevřeného TCP spojení odpovídáním SYN/ACK, čímž se vyčerpávají prostředky útočníka) a <span class='formula'>fasttrack-connection</span> (přepnutí do režimu FastPath pro radikální snížení zátěže CPU routeru)."
+        ],
+        tip: "Všechna pravidla ve firewallu MikroTiku jsou zpracovávána v sekvenčním pořadí (shora dolů). Jakmile paket odpoví pravidlu s akcí accept nebo drop, zpracování v daném řetězci končí."
+    },
+    {
+        author: "michalek",
+        title: "M5. Překlad adres: Static NAT, Dynamic NAT a PAT (Overload)",
+        points: [
+            "NAT (Network Address Translator) umožňuje organizaci prezentovat se navenek v jiném IP prostoru, než jaký reálně používá uvnitř své privátní sítě. Umožňuje zařízením s privátními, globálně nesměrovatelnými adresami komunikovat do internetu jejich překladem na veřejné adresy. Typicky běží na rozhraní stub sítě (Border gateway router).",
+            "**Static NAT (One-to-One NAT):** Poskytuje jednoznačný překlad adres v poměru 1:1. Mapování mezi vnitřní privátní adresou a vnější veřejnou adresou je pevně definováno správcem. Používá se tehdy, když vnitřní stanice (např. webový server) musí být zvenčí dostupná na stálé veřejné IP adrese.",
+            "**Dynamic NAT:** Mapování vnitřní privátní adresy na veřejnou adresu probíhá dynamicky ze specifikovaného fondu (poolu) veřejných adres. Překlad v tabulce neexistuje, dokud směrovač nezaznamená odchozí provoz vyžadující překlad. Pokud je pool vyčerpán, další stanice se do internetu nepřipojí.",
+            "**PAT (Port Address Translation / NAT Overload / Many-to-One):** Umožňuje mapovat mnoho lokálních privátních IP adres na jedinou veřejnou IP adresu (nebo malý pool). K rozlišení jednotlivých datových toků využívá čísla portů vyšších vrstev (TCP/UDP). PAT se pokouší zachovat původní zdrojový port; pokud je obsazen, vyhledá první volný port od hodnoty 1024 výše. V Linuxu se tato činnost označuje jako 'Masquerading'.",
+            "Terminologie Cisco: **Inside Local** (IP hosta v privátní síti), **Inside Global** (legitimní veřejná IP reprezentující hosta navenek), **Outside Local** (IP externího cíle, jak se jeví vnitřní síti) a **Outside Global** (skutečná IP přiřazená vlastníkem externímu hostu)."
+        ],
+        tip: "Výhody NAT zahrnují úsporu veřejného adresního prostoru a skrytí interní topologie (zvýšení bezpečnosti). Nevýhodou je vysoká zátěž procesoru a paměti routeru, latence a ztráta koncové dohledatelnosti paketů (IP traceability)."
+    },
+    {
+        author: "michalek",
+        title: "M6. Carrier-Grade NAT (NAT444) a CGN logování",
+        points: [
+            "Carrier-Grade NAT (CGN), označovaný také jako Large-Scale NAT (LSN) nebo NAT444, je typ masivního překladu adres nasazovaný poskytovateli internetového připojení (ISP) za účelem boje proti vyčerpání veřejných IPv4 adres.",
+            "Pojem NAT444 vyjadřuje, že klientský provoz prochází třemi odlišnými IP doménami: zákaznickou privátní sítí (např. doma za routerem dle RFC 1918), privátní sítí operátora (Carrier network) a finálně veřejným internetem.",
+            "Dle standardu **RFC 6598** je pro účely vnitřních sítí operátora (mezi zákaznickým routerem CE a CGN routerem poskytovatele) vyhrazen specifický sdílený adresní prostor **<span class='formula'>100.64.0.0/10</span>**.",
+            "**Logování a zpětná dohledatelnost:** Standardní PAT generuje enormní množství logů, protože musí zaznamenat každou otevřenou relaci, což je pro ISP neudržitelné. Řešením je **RFC 7422 – Deterministic Address Mapping**, neboli deterministický NAT.",
+            "Princip deterministického NATu spočívá v pevném, matematicky definovaném přiřazení bloku vnějších portů pro každou interní IP adresu (např. uživatel s IP 100.64.1.1 dostane fixně porty 2000–2099 na veřejné IP 2.2.2.2). To radikálně snižuje nároky na logování, přičemž je plně zachována zákonná traceability pro abuse zprávy a retention data dle směrnic Evropského parlamentu (např. 2006/24/EC)."
+        ],
+        tip: "U zkoušky nezapomeňte uvést přesný rozsah pro CGN: 100.64.0.0/10. Často se plete s klasickými privátními rozsahy."
+    },
+    {
+        author: "michalek",
+        title: "M7. Přechodové mechanismy na IPv6: Tunelování 6to4 a NAT64/DNS64",
+        points: [
+            "Při vyčerpání IPv4 adres existují tři hlavní strategie přechodu na IPv6: Dual Stack (souběžný běh obou protokolů), Tunelování (přenos jednoho protokolu v druhém) a Překlad (NAT).",
+            "**Mechanismus 6to4 (RFC 3056, RFC 3068):** Umožňuje přenášet IPv6 pakety izolovaných ostrovů skrze stávající nativní IPv4 infrastrukturu (např. internet). Funguje tak, že hraniční Dual-Stack router zapouzdří celý IPv6 paket do datové části IPv4 paketu, přičemž v hlavičce IPv4 nastaví typ protokolu na hodnotu 41 (IPv6-in-IPv4).",
+            "Pro mechanismus 6to4 je striktně rezervován IPv6 prefix **<span class='formula'>2002::/16</span>**. Za tento prefix se do hlavičky IPv6 adresy vkládá 32bitová veřejná IPv4 adresa daného hraničního routeru převedená do hexadecimální soustavy (např. IPv4 147.229.192.167 vytvoří prefix 2002:93e5:c0a7::/48).",
+            "**NAT64:** Je stavový nebo bezstavový překladač, který umožňuje čistě IPv6 klientům transparentně komunikovat s čistě IPv4 servery. Vytváří mapování mezi IPv6 a IPv4 adresami, přičemž pro tuto službu je rezervován standardní prefix **<span class='formula'>64:ff9b::/96</span>**.",
+            "**DNS64:** Úzce spolupracuje s NAT64. Pokud IPv6-only klient vznese dotaz na jméno serveru, který má pouze IPv4 adresu, DNS64 server zachytí prázdnou odpověď (neexistující AAAA záznam), provede dotaz na IPv4 'A' záznam a syntetizuje (vytvoří) falešný 'AAAA' záznam tak, že vezme nalezenou 32bitovou IPv4 adresu a vloží ji na konec prefixu 64:ff9b::/96. Klient pak posílá IPv6 pakety na tuto syntetizovanou adresu a NAT64 brána je po cestě přeloží na standardní IPv4."
+        ],
+        tip: "Pochopení interakce mezi DNS64 a NAT64 je klíčové: DNS64 upravuje kontrolní rovinu (překlad jmen), zatímco NAT64 realizuje samotný datový překlad hlaviček paketů."
+    },
+    {
+        author: "machnik",
+        title: "P1. Směrování (Routing) a proces zpracování paketu směrovačem",
+        points: [
+            "Směrování (Routing) je proces, jehož účelem je zjištění, kam poslat datové pakety, jejichž cíl leží vně lokálního segmentu sítě. Směrovače (Routery) jsou síťová zařízení vrstvy L3, která sbírají, ověřují a aktualizují směrovací informace.",
+            "Směrovací informace jsou uloženy ve **směrovací tabulce** (Routing Table). Každý záznam obsahuje: cílovou síťovou adresu podsítě, síťovou masku, IP adresu následujícího směrovače na cestě (**Next Hop**) a odchozí fyzické rozhraní. Záznamy mohou být vloženy buď staticky (manuálně správcem) nebo dynamicky pomocí směrovacích protokolů. Směrovač automaticky zná pouze cesty do přímo připojených sítí (Directly Connected) na základě konfigurace svých rozhraní.",
+            "**Krok 1 (Odesílatel):** Počítač porovná cílovou IP adresu se svou maskou. Pokud cíl není v lokální podsíti, zapouzdří IP paket do ethernetového rámce, kde jako cílovou MAC adresu nastaví **MAC adresu výchozí brány (Default Gateway)**, kterou zjistí pomocí ARP.",
+            "**Krok 2 (Přijetí směrovačem):** Směrovač přijme rámec, zkontroluje integritu pomocí FCS (Frame Check Sequence) a ověří cílovou MAC adresu. Pokud mu rámec náleží, rozbalí jej (odstraní L2 hlavičku a patku) a předá IP paket k analýze.",
+            "**Krok 3 (Vyhledávání v tabulce):** Směrovač extrahuje cílovou IP adresu z paketu a sekvenčně ji porovnává se záznamy v tabulce (hledá se shoda s nejdelším prefixem). Pokud shodu nalezne, zjistí odchozí rozhraní a Next Hop. Pokud shodu nenalezne, paket zahodí (případně využije statickou výchozí cestu / default route `0.0.0.0/0`). Těsně před odesláním zapouzdří paket do nové L2 hlavičky, kde cílovou MAC adresu Next Hopu zjistí opět pomocí protokolu ARP."
+        ],
+        tip: "Při popisu zpracování paketu nezapomeňte zdůraznit, že IP adresy zdroje a cíle zůstávají během cesty skrze směrovače neměnné (pokud se neprovádí NAT), ale MAC adresy vrstvy L2 se na každém směrovači (hopu) kompletně přepíší."
+    },
+    {
+        author: "machnik",
+        title: "P2. Klasifikace směrovacích protokolů a administrativní vzdálenost",
+        points: [
+            "Směrovací protokoly se globálně dělí na dvě základní skupiny podle toho, zda operují uvnitř jedné autonomní správy, nebo mezi nimi. Autonomní systém (AS) reprezentuje skupinu sítí pod jednotnou správou s unifikovanou směrovací strategií.",
+            "**IGP (Interior Gateway Protocol):** Provádějí výměnu směrovacích informací výhradně **uvnitř** jednoho autonomního systému . Příklady: RIP, OSPF, EIGRP.",
+            "**EGP (Exterior Gateway Protocol):** Provádějí výměnu směrovacích informací **mezi** různými autonomními systémy. Současným celosvětovým standardem je protokol **BGP-4**.",
+            "Protokoly IGP se dále interně dělí podle použitého algoritmu na: 1) **Distance Vector** (zkoumají pouze směr a vzdálenost; příklad RIP). 2) **Link-State** (shromažďují kompletní topologické informace a stav linek; příklad OSPF). Podmnožinou je hybridní kód EIGRP.",
+            "**Administrativní vzdálenost (AD):** Určuje věrohodnost a spolehlivost zdroje směrovací informace v situaci, kdy se směrovač dozví o cestě do stejné cílové sítě z více různých zdrojů/protokolů. AD je celé číslo od 0 do 255; **čím nižší je hodnota AD, tím důvěryhodnější je protokol** a jeho cesta se vloží do směrovací tabulky. Přednastavené hodnoty na prvcích Cisco: Přímo připojená síť = <span class='formula'>0</span>, Statická cesta = <span class='formula'>1</span>, eBGP = <span class='formula'>20</span>, EIGRP = <span class='formula'>90</span>, OSPF = <span class='formula'>110</span>, RIP = <span class='formula'>120</span>, iBGP = <span class='formula'>200</span>, Nedůvěryhodný zdroj = <span class='formula'>255</span>."
+        ],
+        tip: "Neplňte si pojem metrika a administrativní vzdálenost. Metrika porovnává cesty *v rámci jednoho protokolu*, AD porovnává cesty *mezi různými protokoly navzájem*."
+    },
+    {
+        author: "machnik",
+        title: "P3. Distance Vector směrovací protokoly, smyčky a jejich řešení",
+        points: [
+            "Distance Vector protokoly (např. RIP) jsou založeny na Bellman-Ford-Moorově algoritmu. Směrovače periodicky zasílají **kompletní kopie svých směrovacích tabulek** všem svým přímým sousedům. Směrovače nemají detailní přehled o celkové topologii sítě, znají pouze vzdálenost (např. počet skoků / *hop count*) a odchozí směr.",
+            "V případě výpadku sítě dochází kvůli periodickému rozesílání k pomalé **konvergenci sítě** (doba, než všechny směrovače získají konzistentní informaci o změně). Pomalá konvergence vede k fatálnímu riziku vzniku **směrovacích smyček** (Routing Loops). Pokud se síť stane nedostupnou, sousední směrovač, který o tom ještě neví, může poslat tabulku s původní cestou. Původce paketu si vytvoří záznam s vyšší metrikou a paket následně nekonečně cyklí mezi dvěma routery, dokud jeho TTL neklesne na 0.",
+            "**Split Horizon:** Základní mechanismus prevence smyček. Pravidlo definuje, že směrovač nesmí poslat směrovací informaci o konkrétní síti skrze to stejné fyzické rozhraní, přes které se tuto informaci původně naučil. Zamezí smyčkám v lineární topologii, v komplexní ale nestačí.",
+            "**Route Poisoning a Poison Reverse:** Jakmile směrovač detekuje výpadek přímo připojené sítě, okamžitě nastaví její metrickou hodnotu na nekonečno (u RIPu hodnota 16, čímž je síť označena za nedosažitelnou). Tuto otrávenou informaci rozešle sousedům, kteří bleskově reagují a pošlou zpět potvrzení ve formě zprávy **Poison Reverse**.",
+            "**Hold-down Timer:** Pokud se směrovač dozví o nedostupnosti sítě, spustí hold-down časovač. Po tuto dobu striktně ignoruje jakékoliv zprávy od jiných směrovačů, které by tvrdily, že daná síť je opět dostupná, pokud nabízejí horší metrickou hodnotu. Tím se dává síti čas na plnou konvergenci bez akceptace zastaralých chybových zpráv. K urychlení se využívají také **Triggered Updates** (odeslání zprávy o změně ihned bez čekání na periodický interval)."
+        ],
+        tip: "Protokol RIPv1 je striktně třídní (classful), zatímco RIPv2 podporuje VLSM (Variable Length Subnet Masking) a bezřídní adresování, což je zásadní rozdíl pro moderní nasazení."
+    },
+    {
+        author: "machnik",
+        title: "P4. Link-State směrovací protokoly a princip fungování OSPF",
+        points: [
+            "Link-State směrovací protokoly ( dominantně reprezentované protokolem **OSPF – Open Shortest Path First**) fungují na diametrálně odlišném principu než distance vector. Směrovače si nevyměňují směrovací tabulky, ale exaktní informace o stavu svých rozhraní a sousedech pomocí zpráv **LSU (Link-State Update)**, které se skládají z dílčích záznamů **LSA (Link-State Advertisement)**.",
+            "Zprávy LSU jsou rozesílány okamžitě při detekci jakékoliv změny (Triggered updates) pomocí efektivního multicastového vysílání. Každý směrovač v síti přijme tyto zprávy a vybuduje si lokálně zcela identickou **topologickou databázi (LSDB – Link-State Database)**. Směrovač má tedy kompletní a detailní přehled o přesné struktuře celé sítě.",
+            "Nad touto topologickou databází spustí směrovač **Dijkstrův SPF (Shortest Path First) algoritmus**. Výsledkem výpočtu je tzv. **SPF strom** (Shortest Path Tree), kde je daný směrovač kořenem a listy jsou cílové podsítě. Z tohoto stromu se vyextrahují matematicky nejkratší bezsmyčkové cesty a ty se zapíší do směrovací tabulky.",
+            "OSPFv2 (pro IPv4) pracuje ve 3 fázích: 1) Vytváření sousedských vazeb pomocí zpráv Hello (přechod do stavu **2-way**). 2) Výměna popisů databází (Database Description) a synchronizace LSA (přechod do stavu **Full**). 3) Samotný výpočet SPF cesty. Metrikou OSPF je parametr **Cost** (cena), která je nepřímo úměrná přenosové rychlosti (bandwidth) odchozího rozhraní.",
+            "V ethernetových (všesměrových) sítích probíhá volba **DR (Designated Router)** a **BDR (Backup Designated Router)** z důvodu snížení počtu vyměňovaných LSA. Ostatní routery (DRother) navazují stav Full pouze s DR a BDR (komunikují na multicast IP 224.0.0.6), zatímco mezi sebou zůstávají trvale ve stavu 2-way."
+        ],
+        tip: "Výhodou OSPF je extrémně krátká doba konvergence a minimální riziko smyček. Nevýhodou je obrovská náročnost na výkon CPU a velikost RAM směrovače kvůli neustálému přepočítávání SPF algoritmu při jakémkoliv zakmitání linky."
+    },
+    {
+        author: "machnik",
+        title: "P5. OSPF oblasti (Areas), typy směrovačů a OSPFv3 pro IPv6",
+        points: [
+            "Aby se zamezilo nadměrnému přetěžování procesoru směrovačů neustálým přepočítáváním SPF algoritmu v rozsáhlých sítích, rozděluje se OSPF síť do hierarchických **oblastí (Areas)**. Informace o detailní topologii se shromažďují pouze uvnitř dané oblasti; mezi oblastmi se vyměňují pouze sumarizované směrovací informace (Summary LSA).",
+            "**Area 0 (páteřní oblast / backbone area):** Je srdcem OSPF sítě. Všechny ostatní nepáteřní oblasti musí být fyzicky nebo logicky propojeny přímo s Area 0, přes kterou probíhá veškerý mezioblastní provoz.",
+            "Klasifikace směrovačů v hierarchii oblastí: **Interní směrovač** (všechna jeho rozhraní leží v jedné nepáteřní oblasti), **Páteřní směrovač** (všechna jeho rozhraní jsou aktivní v Area 0) a **ABR (Area Border Router – hraniční směrovač)**, který má rozhraní v páteřní i nepáteřní oblasti a provádí mezi nimi sumarizaci cest.",
+            "Pravidla dělení na oblasti: Všechna rozhraní v rámci jedné podsítě musí patřit do stejné oblasti. Oblast musí být striktně souvislá (geograficky neroztržená).",
+            "**OSPFv3:** Jedná se o novou verzi protokolu vyvinutou speciálně pro sítě **IPv6**. Ačkoliv je princip algoritmu SPF totožný, OSPFv3 distribuuje 128bitové IPv6 prefixy a není zpětně kompatibilní s OSPFv2 (mohou ale běžet souběžně jako dva nezávislé procesy). K přenosu zpráv využívá IPv6 Link-Local adresy rozhraní a komunikuje na multicastových adresách **<span class='formula'>FF02::5</span>** (všichni OSPF routery) a **<span class='formula'>FF02::6</span>** (DR/BDR směrovače). Zajímavostí je, že OSPF Router ID zůstává nadále 32bitové číslo zapsané ve formátu IPv4 adresy."
+        ],
+        tip: "Zapamatujte si, že OSPFv3 na rozdíl od OSPFv2 pracuje s pojmem linka (link) namísto podsíť (subnet), což mu umožňuje podporovat více IPv6 instancí a adres na jediném fyzickém rozhraní."
+    },
+    {
+        author: "machnik",
+        title: "P6. Bezpečnost v LAN sítích – Port Security, DHCP Snooping, DAI a STP guardy",
+        points: [
+            "Bezpečnost v LAN sítích je kritická, protože koncová zařízení připojená k přepínačům (Switchům) představují snadný cíl pro útočníka k proniknutí do vnitřní sítě (ovládnutím stanice, podvržením MAC adresy či rogue přepínače).",
+            "**Zabezpečení portů (Port Security):** Bezpečnostní nástroj na L2 vrstvě přepínače. Umožňuje omezit a povolit pouze specifické zdrojové MAC adresy, které smějí portem komunikovat. Lze definovat maximální počet MAC adres (defaultně 1). Adresy se konfigurují staticky (*Static*), učí se dynamicky (*Dynamic*), nebo se uplatní režim ***Sticky***, kdy se dynamicky naučené adresy automaticky zapíší do běžící konfigurace jako povolené. Při porušení pravidel (Violation) se port buď zcela deaktivuje (stav *error-disabled / shutdown*), nebo se nadlimitní rámce zahazují a generuje se SNMP/Syslog zpráva (*restrict*).",
+            "**DHCP Snooping:** Chrání síť před útoky na DHCP server (zahlcení MAC adresami – DHCP starvation, nebo podvržení falešného rogue DHCP serveru pro útok *Man-in-the-Middle*). Rozděluje rozhraní na **Důvěryhodná / Trusted** (připojeny legitimní DHCP servery, zprávy procházejí volně) a **Nedůvěryhodná / Untrusted** (připojeni uživatelé). Pokud na nedůvěryhodný port dorazí nabídka od serveru (`DHCP Offer` nebo `DHCP Ack`), přepínač ji okamžitě zahodí. Navíc kontroluje shodu klientských MAC adres a buduje dynamickou tabulku **DHCP Snooping Binding Table** (obsahuje dvojice MAC, IP, číslo portu a VLAN).",
+            "**Dynamic ARP Inspection (DAI):** Efektivní obrana proti podvržení ARP (ARP spoofing / ARP poisoning), které útočníci využívají ke klamání ARP tabulek stanic a odklonění provozu přes sebe (*Man-in-the-Middle*). DAI běží souběžně s DHCP Snoopingem a na nedůvěryhodných rozhraních striktně validuje všechny příchozí ARP zprávy (Request/Reply) vůči záznamům v **DHCP Snooping Binding Table** (případně statickým ARP ACL). Pokud IP a MAC adresa v ARP paketu neodpovídá legitimně přidělené adrese z DHCP, paket je okamžitě zahozen.",
+            "**Obrana proti útokům na STP (PortFast a BPDU Guard):** Útočník může do sítě poslat BPDU zprávy s nízkou prioritou bridge ID, čímž by se stal přepínačem **Root Bridge** a ovlivnil cesty přenosu rámců (odposlech provozu). Obranou je **PortFast**, který se konfiguruje na portech s koncovými stanicemi a okamžitě je přepíná do stavu *forwarding*, a **BPDU Guard**, který port s PortFastem okamžitě z bezpečnostních důvodů vypne (deaktivuje), pokud na něj zespodu dorazí jakákoliv zpráva BPDU z cizího přepínače. Obě funkce se doporučuje nasazovat současně."
+        ],
+        tip: "Tato komplexní otázka je u Machníka považována za 'těžkou zkouškovou' z LAN bezpečnosti. Klíčem k úspěchu je ukázat provázanost: Dynamic ARP Inspection nemůže fungovat bez databáze, kterou vytvořil DHCP Snooping!"
+    }
+];
+
+function init() {
+    const navMichalek = document.getElementById('navMichalek');
+    const navMachnik = document.getElementById('navMachnik');
+    const area = document.getElementById('content-area');
+
+    topics.forEach((t, i) => {
+        let btn = document.createElement('div');
+        btn.className = `nav-item ${t.author}`;
+        btn.id = `nav-${i}`;
+        btn.innerText = t.title;
+        btn.onclick = () => scrollToTopic(i);
+        
+        if(t.author === 'michalek') {
+            navMichalek.appendChild(btn);
+        } else {
+            navMachnik.appendChild(btn);
+        }
+
+        let card = document.createElement('div');
+        card.className = `study-card ${t.author}`;
+        card.id = `topic-${i}`;
+        card.innerHTML = `
+            <span class="category-label ${t.author}">Okruh: ${t.author.toUpperCase()}</span>
+            <h2>${t.title}</h2>
+            <ul class="key-points">
+                ${t.points.map(p => `<li>${p}</li>`).join('')}
+            </ul>
+            <div class="expert-tip">
+                <strong>💡 Tip ke zkoušení:</strong> ${t.tip}
+            </div>
+        `;
+        area.appendChild(card);
+    });
+
+    const mainContent = document.getElementById('main-content');
+    mainContent.onscroll = () => {
+        let current = "";
+        topics.forEach((_, i) => {
+            const el = document.getElementById(`topic-${i}`);
+            if (el.offsetTop - 100 <= mainContent.scrollTop) {
+                current = i;
+            }
+        });
+        
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+        if (current !== "") {
+            document.getElementById(`nav-${current}`).classList.add('active');
+        }
+    };
+}
+
+function scrollToTopic(i) {
+    document.getElementById(`topic-${i}`).scrollIntoView({behavior: 'smooth'});
+}
+
+init();
+</script>
+
+</body>
+</html>

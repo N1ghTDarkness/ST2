@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <title>Zkouškový simulátor - ST2</title>
+    <style>
+        :root { --primary: #1a73e8; --bg: #f8f9fa; --text: #202124; --blue-square: #007bff; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; display: flex; height: 100vh; overflow: hidden; }
+        
+        #sidebar { width: 260px; background: #fff; border-right: 1px solid #dadce0; display: flex; flex-direction: column; padding: 15px; overflow-y: auto; }
+        h3 { margin-top: 0; margin-bottom: 10px; font-size: 1.1em; }
+
+        /* Zmenšená mřížka navigace */
+        .nav-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; margin-bottom: 15px; }
+        .nav-item { width: 35px; height: 35px; display: flex; align-items: center; justify-content: center; border: 1px solid #dadce0; border-radius: 4px; cursor: pointer; font-size: 0.85em; font-weight: bold; transition: 0.2s; }
+        .nav-item.flagged { background: var(--blue-square) !important; color: white; border-color: var(--blue-square); }
+        .status-green { background: #e6f4ea; color: #1e8e3e; border-color: #ceead6; }
+        .status-orange { background: #fff4e5; color: #d97706; border-color: #ffe0b2; }
+        .status-red { background: #fce8e6; color: #d93025; border-color: #fad2cf; }
+
+        /* Kompaktní odkazy v sidebaru */
+        .external-links { border-top: 1px solid #eee; padding-top: 10px; margin-top: 5px; }
+        .side-link { display: block; text-decoration: none; color: #5f6368; padding: 6px 10px; margin-bottom: 3px; border-radius: 6px; font-size: 0.8em; transition: 0.1s; border: 1px solid transparent; line-height: 1.2; }
+        .side-link:hover { background: #f1f3f4; border-color: #dadce0; color: var(--primary); }
+        .side-link strong { display: block; color: var(--text); font-size: 0.95em; }
+
+        #main-content { flex: 1; padding: 40px; overflow-y: auto; scroll-behavior: smooth; }
+        .header-stats { position: sticky; top: -40px; background: var(--primary); color: white; padding: 20px; border-radius: 0 0 15px 15px; margin: -40px -40px 30px -40px; display: flex; justify-content: space-between; z-index: 100; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        
+        .q-card { background: #fff; border-radius: 12px; padding: 30px; margin-bottom: 40px; border: 1px solid #dadce0; }
+        .q-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 15px; }
+        
+        .blue-sq-icon { width: 20px; height: 20px; background: var(--blue-square); display: inline-block; cursor: pointer; border-radius: 3px; opacity: 0.3; }
+        .blue-sq-icon.active { opacity: 1; }
+
+        .opt-label { display: flex; align-items: flex-start; padding: 12px; border: 2px solid #eee; border-radius: 10px; margin-bottom: 8px; cursor: pointer; transition: 0.1s; font-size: 0.95em; }
+        .opt-label:hover { border-color: var(--primary); background: #f8fbff; }
+        .opt-label input { margin-right: 12px; margin-top: 4px; transform: scale(1.1); }
+        
+        .correct { background: #e6f4ea !important; border-color: #34a853 !important; }
+        .wrong { background: #fce8e6 !important; border-color: #ea4335 !important; }
+        
+        .check-btn { width: 100%; padding: 15px; background: #2c3e50; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        .submit-all-btn { background: #1a73e8; font-size: 1.1em; margin-top: 20px; margin-bottom: 80px; padding: 18px; }
+        
+        .points-feedback { margin-top: 15px; font-weight: bold; padding: 15px; border-radius: 8px; display: none; line-height: 1.5; font-size: 0.95em; }
+        .hint-box { margin-top: 10px; font-weight: normal; color: #555; font-style: italic; border-top: 1px solid rgba(0,0,0,0.1); padding-top: 10px; }
+
+        #setup { position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 1000; display: flex; align-items: center; justify-content: center; color: white; }
+        .setup-card { background: #202124; padding: 40px; border-radius: 20px; max-width: 450px; width: 90%; text-align: center; border: 1px solid #3c4043; }
+    </style>
+</head>
+<body>
+
+<div id="setup">
+    <div class="setup-card">
+        <h2>Test na ST2 otázky z poslední přednášky</h2>
+        <p>Test na ST2 otázky</p>
+        <div style="text-align:left; margin: 20px 0;">
+            <label><input type="checkbox" id="shufQ"> Náhodné pořadí úloh</label><br><br>
+            <label><input type="checkbox" id="shufA"> Náhodné pořadí odpovědí</label>
+        </div>
+        <button class="check-btn" onclick="start()">SPUSTIT TEST</button>
+    </div>
+</div>
+
+<div id="sidebar">
+    <h3>Navigace</h3>
+    <div id="navGrid" class="nav-grid"></div>
+
+    <div class="external-links">
+        <a href="https://n1ghtdarkness.github.io/VSB-IKT/" class="side-link"><strong>🏠 Domů</strong>Všechny materiály</a>
+        <a href="https://n1ghtdarkness.github.io/PD/" class="side-link"><strong>📡 Přenos dat</strong>Protokoly / Modulace</a>
+        <a href="https://n1ghtdarkness.github.io/MIKT/" class="side-link"><strong>📊 Měření v IKT</strong>Laboratoře / Diag.</a>
+        <a href="https://n1ghtdarkness.github.io/RS/" class="side-link"><strong>📶 Radiové sítě</strong>Bezdrát / Antény</a>
+        <a href="https://n1ghtdarkness.github.io/ST2/" class="side-link"><strong>📶 Síťové technologie 2</strong>Sítě 2</a>
+    </div>
+</div>
+
+<div id="main-content">
+    <div class="header-stats">
+        <div id="prog">Zodpovězeno: 0 / 40</div>
+        <div id="score">Body: 0,00 / 0,00</div>
+    </div>
+    <div id="quiz"></div>
+    <div id="final-anchor">
+        <button class="check-btn submit-all-btn" onclick="finishAll()">ODEVZDAT VŠE A UKONČIT TEST</button>
+    </div>
+</div>
+
+<script>
+
+27,23,25
+const master = [
+    {
+        id: 1,
+        q: "Co se stane, pokud přepínač používající nástroj port security, obdrží na svém rozhraní ethernetový rámec s nadlimitní MAC adresou (při výchozím nastavení)?",
+        opts: [
+            "Rámec je zahozen and rozhraní se deaktivuje.",
+            "Rámec je zahozen a pošle se zpráva do logu.",
+            "Rámec sice není zahozen, ale pošle se zpráva do logu.",
+            "Rámec je prozkoumán pomocí DHCP Snooping binding table a pak je buď zahozen, nebo poslán dál."
+        ],
+        ans: [0],
+        pts: 1.0,
+        hint: "Výchozím režimem port security při narušení pravidel je Shutdown.",
+        rationale: "Při výchozím nastavení (mode shutdown) přepínač při detekci nadlimitní nebo nepovolené MAC adresy rozhraní okamžitě vypne (deaktivuje) a rámec zahodí."
+    },
+    {
+        id: 2,
+        q: "Jak se jmenuje jazyk, kterým se vytváří datové modely sloužící pro popis toho, co může být konfigurováno, monitorováno nebo provedeno na síťovém zařízení?",
+        opts: [
+            "RESTCONF",
+            "YANG",
+            "REST API",
+            "XML",
+            "JSON"
+        ],
+        ans: [1],
+        pts: 1.0,
+        hint: "Často se používá ve spojení s protokoly NETCONF a RESTCONF.",
+        rationale: "YANG je datový modelovací jazyk vyvinutý pro modelování konfigurací a stavových dat síťových zařízení."
+    },
+    {
+        id: 3,
+        q: "Jaký bude stav sousedství v OSPF, pokud navázání jejich spojení proběhlo bez problémů a jedná se o komunikaci s Designated Routerem (DR) nebo Backup Designated Routerem (BDR)?",
+        opts: [
+            "Full",
+            "Loading",
+            "Exchange",
+            "Init",
+            "2-Way"
+        ],
+        ans: [0],
+        pts: 1.0,
+        hint: "Plné sousedství a synchronizace databáze.",
+        rationale: "Komunikace se směrovači ve funkcích DR a BDR dosahuje po úspěšné synchronizaci stavu Full. (Na rozdíl od DROther sousedů, kteří zůstávají ve stavu 2-Way)."
+    },
+    {
+        id: 4,
+        q: "Které tři pravidla jsou obecně považovány za doporučené postupy při umisťování ACL?",
+        opts: [
+            "umístit standard ACL v blízkosti cíle",
+            "umístit extended ACL v blízkosti zdroje",
+            "umístit standard ACL v blízkosti zdroje",
+            "umístit extended ACL v blízkosti cíle",
+            "pro každý inbound ACL umístěný na rozhraní by měl existovat odpovídající outbound ACL",
+            "filtrovat nechtěný provoz před tím, než se přesměruje na linku s nízkou šířkou pásma"
+        ],
+        ans: [0, 1, 5],
+        pts: 1.0,
+        hint: "Standardní filtruje jen podle zdroje, rozšířené filtruje přesně a hned na začátku.",
+        rationale: "Standardní ACL nemají informaci o cíli, proto se dávají co nejblíže k cíli, aby se nezablokoval provoz jinam. Rozšířená (extended) ACL filtrují detailně, takže je chceme nasadit hned u zdroje, abychom nezatěžovali síť a linky s nízkou propustností provozem, který bude stejně zahozen."
+    },
+    {
+        id: 5,
+        q: "Jakou metodu musí síťový správce použít k zajištění konektivity mezi poštovními servery v topologii: Síť s IPv6 -> Dual Stack router -> Síť s IPv4 -> Dual Stack router -> Síť s IPv6?",
+        opts: [
+            "NAT444",
+            "konfigurace OSPFv3",
+            "6to4",
+            "NAT46",
+            "dual stack",
+            "4to6"
+        ],
+        ans: [2],
+        pts: 1.0,
+        hint: "Tunelování IPv6 skrze IPv4 síť.",
+        rationale: "Metoda 6to4 umožňuje přenášet pakety IPv6 skrze stávající IPv4 síťovou infrastrukturu pomocí zapouzdření."
+    },
+    {
+        id: 6,
+        q: "Pokud existuje dvě nebo více různých cest k stejné cílové síti, o kterých se daný směrovač dozvěděl pomocí různých směrovacích protokolů, provede se výběr té nejlepší cesty obvykle pomocí:",
+        opts: [
+            "Kombinace metriky a administrativní vzdálenosti.",
+            "Metriky - její větší hodnota reprezentuje lepší cestu.",
+            "Administrativní vzdálenosti - její menší hodnota reprezentuje lepší cestu.",
+            "Metriky - její menší hodnota reprezentuje lepší cestu.",
+            "Administrativní vzdálenosti - její větší hodnota reprezentuje lepší cestu."
+        ],
+        ans: [2],
+        pts: 1.0,
+        hint: "Důvěryhodnost samotného protokolu.",
+        rationale: "Při rozhodování mezi více cestami z různých směrovacích protokolů se jako první kritérium používá administrativní vzdálenost (AD). Protokol s nižší AD je považován za důvěryhodnější."
+    },
+    {
+        id: 7,
+        q: "Který atribut protokolu BGP ovlivňuje, která cesta má být zvolena ven z autonomního systému? Tento atribut je platný pouze uvnitř určitého autonomního systému a je šířen jen pomocí iBGP.",
+        opts: [
+            "Origin",
+            "AS-path",
+            "MED",
+            "Local Preference",
+            "Atomic Aggregate",
+            "Next Hop"
+        ],
+        ans: [3],
+        pts: 1.0,
+        hint: "Lokální preference uvnitř AS.",
+        rationale: "Local Preference (přirozeně lokální pro dané AS) určuje nejlepší cestu pro odchozí provoz z autonomního systému a sdílí se výhradně přes iBGP sesílení."
+    },
+    {
+        id: 8,
+        q: "Která tvrzení jsou pravdivá, pokud jde o konvergenci sítě? (2 správné odpovědi)",
+        opts: [
+            "U distance vector směrovacích protokolů je doba konvergence poměrně velká.",
+            "U link-state směrovacích protokolů je doba konvergence poměrně velká.",
+            "Cílem je dosáhnout dlouhé doby konvergence v síti.",
+            "V okamžiku, kdy všechny směrovače v určité oblasti mají aktuální informace o síťové topologii, dochází ke konvergenci sítě.",
+            "Doba mezi dvěma změnami v topologii sítě se nazývá doba konvergence."
+        ],
+        ans: [0, 3],
+        pts: 1.0,
+        hint: "Hledej stav, kdy se všichni shodnou, a rychlost starších protokolů.",
+        rationale: "Konvergence sítě je stav, kdy mají všechny směrovače konzistentní a aktuální mapu sítě. Distance vector protokoly (např. RIP) konvergují pomalu kvůli postupnému předávání tabulek 'drby od souseda'."
+    },
+    {
+        id: 9,
+        q: "Jakým příkazem v globálním konfiguračním režimu (config) smažeme z databáze přepínače VLAN s číslem 100?",
+        opts: [
+            "delete vlan 100",
+            "remove vlan 100",
+            "Switch(config)# no vlan 100",
+            "clear vlan 100"
+        ],
+        ans: [2],
+        pts: 1.0,
+        hint: "V Cisco IOS se většina konfigurací ruší negací příkazu.",
+        rationale: "Příkaz 'no vlan 100' v globální konfiguraci kompletně odstraní danou VLAN z lokální databáze přepínače."
+    },
+    {
+        id: 10,
+        q: "Jaký je základní princip firewallu?",
+        opts: [
+            "Zajišťuje šifrování paketů mezi servery",
+            "Řídí přístup mezi důvěryhodnou a nedůvěryhodnou sítí pomocí pravidel",
+            "Je součástí DNS systému",
+            "Vždy propouští ICMP provoz"
+        ],
+        ans: [1],
+        pts: 1.0,
+        hint: "Filtrování provozu na hranici sítí.",
+        rationale: "Hlavní funkcí firewallu je izolovat vnitřní (bezpečnou) síť od vnější (nebezpečné) sítě a na základě bezpečnostních politik filtrovat povolený a zakázaný provoz."
+    },
+    {
+        id: 11,
+        q: "Co obsahuje 802.1Q tag?",
+        opts: [
+            "IP adresu odesílatele",
+            "informace o trunku",
+            "MAC adresu cílového zařízení",
+            "VLAN ID"
+        ],
+        ans: [3],
+        pts: 1.0,
+        hint: "Identifikátor virtuální sítě.",
+        rationale: "Standard IEEE 802.1Q vkládá do ethernetového rámce tag, jehož klíčovou součástí je VLAN ID (VID) pro správné směrování provozu na trunku."
+    },
+    {
+        id: 12,
+        q: "Uveďte softwarové nástroje pro řízení konfigurace. (3 správné odpovědi)",
+        opts: [
+            "Ansible",
+            "YAML",
+            "NETCONF",
+            "Chef",
+            "JSON",
+            "RESTCONF",
+            "XML",
+            "YANG",
+            "Puppet"
+        ],
+        ans: [0, 3, 8],
+        pts: 1.0,
+        hint: "Automatizační orchestrátory infrastruktury (DevOps nástroje).",
+        rationale: "Ansible, Puppet a Chef jsou klasické konfigurační nástroje (Infrastructure as Code). YAML, JSON a XML jsou datové formáty, zatímco NETCONF a RESTCONF jsou protokoly postavené nad YANG modely."
+    },
+    {
+        id: 13,
+        q: "Která adresa je vyžadována v příkazové syntaxi standardního ACL?",
+        opts: [
+            "zdrojová MAC",
+            "cílová MAC",
+            "zdrojová IP",
+            "cílová IP"
+        ],
+        ans: [2],
+        pts: 1.0,
+        hint: "Základní ACL filtrují pouze podle původu paketu.",
+        rationale: "Standardní ACL (Standard Access Control List) v Cisco zařízeních dokáže vyhodnocovat pouze zdrojovou IP adresu (source IP address)."
+    },
+    {
+        id: 14,
+        q: "Jak NAT Overload (PAT) rozlišuje zařízení uvnitř sítě?",
+        opts: [
+            "Pomocí ARP tabulky",
+            "Podle MAC adresy",
+            "Pomocí kombinace IP adresy a portu",
+            "Pouze pomocí IP adresy"
+        ],
+        ans: [2],
+        pts: 1.0,
+        hint: "Port Address Translation.",
+        rationale: "PAT (Port Address Translation / NAT Overload) mapuje více vnitřních privátních adres na jednu veřejnou IP adresu tak, že každému spojení přiřadí unikátní zdrojový port."
+    },
+    {
+        id: 15,
+        q: "Které pojmy se pojí s protokolem HSRP? (3 správné odpovědi)",
+        opts: [
+            "Active/standby",
+            "Active/active",
+            "Virtuální MAC adresa",
+            "Protokol standardizovaný organizací IETF",
+            "Active Virtual Gateway",
+            "Forwarder",
+            "Virtuální IP adresa"
+        ],
+        ans: [0, 2, 6],
+        pts: 1.0,
+        hint: "Cisco proprietární protokol pro redundanci první brány.",
+        rationale: "HSRP (Hot Standby Router Protocol) staví dvojici routerů do rolí Active a Standby, které sdílejí společnou virtuální IP a virtuální MAC adresu."
+    },
+    {
+        id: 16,
+        q: "Z kterého přenosového parametru je odvozena metrika cost např. v protokolu OSPF?",
+        opts: [
+            "Hop count",
+            "Load",
+            "Bandwidth",
+            "Reliability",
+            "Delay"
+        ],
+        ans: [2],
+        pts: 1.0,
+        hint: "Práce s propustností linky.",
+        rationale: "V OSPF je metrika linky (Cost) nepřímo úměrná její šířce pásma (Bandwidth). Výpočet vychází z referenční šířky pásma."
+    },
+    {
+        id: 17,
+        q: "Pokud má směrovač 2 rozhraní a směruje provoz IPv4 i IPv6, kolik ACL lze dohromady na směrovači aplikovat?",
+        opts: [
+            "2",
+            "4",
+            "6",
+            "8"
+        ],
+        ans: [3],
+        pts: 1.0,
+        hint: "Uplatněte pravidlo: rozhraní × směr × protokol.",
+        rationale: "Pravidlo zní: jedno ACL na směr (Inbound/Outbound), na jedno rozhraní and pro jeden konkrétní protokol. Tedy: 2 rozhraní × 2 směry × 2 protokoly (IPv4/IPv6) = 8."
+    },
+    {
+        id: 18,
+        q: "Jaké jsou vlastnosti protokolu NETCONF? (3 správné odpovědi)",
+        opts: [
+            "Pro přenos konfiguračních zpráv používá SSH nebo TLS.",
+            "Používá datové modely vytvořené pomocí jazyka YANG.",
+            "Jeho zprávy používají datový format JSON.",
+            "Jeho zprávy používají datový formát YAML.",
+            "Pro přenos konfiguračních zpráv používá HTTP.",
+            "Jeho zprávy používají datový formát XML.",
+            "Jeho zprávy jsou součástí northbound interface."
+        ],
+        ans: [0, 1, 5],
+        pts: 1.0,
+        hint: "Tradiční robustní síťový protokol využívající značkovací jazyk a bezpečné spojení.",
+        rationale: "NETCONF zprávy jsou kódovány v XML, pro definici dat strukturovaně využívá YANG schémata a k bezpečnému transportu vyžaduje např. SSH tunel."
+    },
+    {
+        id: 19,
+        q: "Který typ připojení k ISP má po jednom připojení ke dvěma ISP za použití jednoho nebo dvou zákaznických směrovačů?",
+        opts: [
+            "Dual-Multihomed",
+            "Multihomed",
+            "Single-Homed",
+            "Dual-Homed"
+        ],
+        ans: [1],
+        pts: 1.0,
+        hint: "Více než jeden poskytovatel, ale bez plné duplicity linek ke každému.",
+        rationale: "Multihomed topologie znamená připojení k více než jednomu unikátnímu poskytovateli internetových služeb pro zajištění redundance v případě výpadku celého ISP."
+    },
+    {
+        id: 20,
+        q: "Jaké jsou typické nevýhody síťového mechanismu NAT? (2 správné odpovědi)",
+        opts: [
+            "Může způsobit nefunkčnost některých aplikací",
+            "Ztráta koncové identifikace zařízení",
+            "Vylučuje použití DNS",
+            "Zvyšuje propustnost sítě"
+        ],
+        ans: [0, 1],
+        pts: 1.0,
+        hint: "Narušení principu end-to-end konektivity.",
+        rationale: "NAT maskuje skutečné IP adresy uzlů (ztráta end-to-end trasování) a přepis hlaviček může rozbít protokoly, které do samotného těla dat balí IP informace (např. starší VoIP či FTP)."
+    },
+    {
+        id: 21,
+        q: "Které protokoly používají formu redundance první brány ve stavu active/standby? (2 správné odpovědi)",
+        opts: [
+            "HSRP",
+            "GLBP",
+            "STP",
+            "VRRP",
+            "FHRP"
+        ],
+        ans: [0, 3],
+        pts: 1.0,
+        hint: "GLBP využívá aktivní vyvažování zátěže, FHRP je obecný název celé skupiny rodiny protokolů.",
+        rationale: "HSRP a VRRP jsou typičtí zástupci FHRP architektury typu Active/Standby (či Master/Backup u VRRP), kde v jeden moment aktivně provoz odbavuje pouze jeden router."
+    },
+    {
+        id: 22,
+        q: "Která tvrzení jsou pravdivá s ohledem na verze protokolu HSRP a podporu adresních protokolů IPv4/IPv6? (3 správné odpovědi)",
+        opts: [
+            "Protokol HSRPv2 je určen pro IPv4 sítě i IPv6 sítě.",
+            "Protokol HSRP není možné použít v IPv6 síti.",
+            "Protokol HSRP je možné použít jak v IPv4 síti, tak i v IPv6 síti.",
+            "Protokol HSRPv1 je určen jen pro IPv4 sítě."
+        ],
+        ans: [0, 2, 3],
+        pts: 1.0,
+        hint: "Porovnej možnosti starší verze 1 a novější verze 2.",
+        rationale: "HSRP celkově podporuje oba světy IP adresace. HSRP verze 1 byla navržena striktně pro IPv4, zatímco HSRP verze 2 přinesla plnou nativní podporu pro IPv6 (spolu s podporou IPv4)."
+    },
+    {
+        id: 23,
+        q: "Proč nemůže komunikovat PC1 s PC2 v zobrazené Router-on-a-Stick topologii?",
+        imageUrl: "o23.jpg",
+        opts: [
+            "Příkaz encapsulation dot1Q 5 obsahuje špatnou VLAN",
+            "Na rozhraní GigabitEthernet0/0 není nakonfigurovaná IP adresa",
+            "Příkaz encapsulation dot1Q 20 obsahuje špatnou VLAN",
+            "Rozhraní GigabitEthernet0/0 není nakonfigurováno jako trunk"
+        ],
+        ans: [0],
+        pts: 1.0,
+        hint: "Zkontroluj VLAN ID na subrozhraní pro PC1, který je ve VLAN 10.",
+        rationale: "PC1 se nachází ve VLAN 10. Na subrozhraní Gi0/0.5 určeném pro tuto podsíť je však chybně zadán příkaz 'encap dot1Q 5' namísto 'encap dot1Q 10'. Router proto taguje rámce špatným identifikátorem a komunikace selže."
+    },
+    {
+        id: 24,
+        q: "Které tabulky se používají v Linuxovém firewallu iptables? (2 správné odpovědi)",
+        opts: [
+            "icmp",
+            "filter",
+            "queue",
+            "nat"
+        ],
+        ans: [1, 3],
+        pts: 1.0,
+        hint: "Základní vestavěné tabulky pro filtrování a překlad adres.",
+        rationale: "Mezi standardní vestavěné tabulky v nástroji iptables patří 'filter' (výchozí pro filtrování paketů) a 'nat' (pro překlad síťových adres). Další běžné tabulky jsou mangle a raw."
+    },
+    {
+        id: 25,
+        q: "Pro zobrazený výpis pravidel z firewallu, kde jsou IP adresy v rozsahu 100.64.0.1 až 100.64.0.10 staticky mapovány na konkrétní rozsahy portů, platí, že: (2 správné odpovědi)",
+        imageUrl: "o25.jpg",
+        opts: [
+            "je pravidlo firewallu, kde se blokuje provoz pro všechny pakety se zdrojovou IP adresou z rozsahu 100.64.0.0/24",
+            "jedná se o dynamický NAT",
+            "deterministický NAT444",
+            "jedná se o port forwarding, který využívá prerouting chain",
+            "využívá se PAT"
+        ],
+        ans: [2, 4],
+        pts: 1.0,
+        hint: "Podívej se na pevný (deterministický) algoritmus rozdělení portů pro vnitřní adresy pod jedinou veřejnou IP adresu.",
+        rationale: "Z tabulky je patrné, že každá jednotlivá privátní IP adresa (z rozsahu CGN 100.64.0.0/) dostává pevně přiřazený, neměnný rozsah 200 zdrojových portů na sdílené veřejné adrese 2.2.2.2. To definuje deterministický NAT444 využívající PAT (překlad portů)."
+    },
+    {
+        id: 26,
+        q: "Co je inside local adresa?",
+        opts: [
+            "Privátní IP adresa pridělená zařízení uvnitř sítě",
+            "Veřejná IP adresa zařízení uvnitř sítě",
+            "IP adresa směrovače poskytovatele",
+            "Privátní IP adresa na straně Internetu"
+        ],
+        ans: [0],
+        pts: 1.0,
+        hint: "Základní terminologie NAT z pohledu vnitřní infrastruktury.",
+        rationale: "Termín 'Inside Local' v terminologii Cisco označuje reálnou IP adresu přiřazenou koncovému zařízení ve vnitřní privátní síti (před překladem)."
+    },
+    {
+        id: 27,
+        q: "Na základě zobrazeného výstupu z routeru (R1#show ip nat translations), na kterou zdrojovou IP adresu se přeloží provoz směřující ze sítě 10.4.4.0/24?",
+        imageUrl: "o27.jpg",
+        opts: [
+            "10.4.4.4",
+            "10.4.4.5",
+            "172.23.104.3 nebo 172.23.104.4",
+            "172.23.103.10"
+        ],
+        ans: [2],
+        pts: 1.0,
+        hint: "Sleduj sloupec Inside Global, který reprezentuje adresu po překladu směrem ven.",
+        rationale: "Sloupec 'Inside Local' ukazuje vnitřní adresy zdrojů (10.4.4.4 a 10.4.4.5). Sloupec 'Inside Global' ukazuje, jak se tyto adresy změní po průchodu NATem na vnější veřejné/globální IP adresy – v tomto případě na 172.23.104.3 a 172.23.104.4."
+    },
+    {
+        id: 28,
+        q: "Který atribut protokolu BGP ovlivňuje, která cesta má být zvolena dovnitř autonomního systému? Tento atribut posílá směrovač do jiného autonomního systému s cílem ovlivnit směrování do lokálního autonomního systému a je šířen jen pomocí eBGP.",
+        opts: [
+            "MED",
+            "Next Hop",
+            "Origin",
+            "Local Preference",
+            "AS-path"
+        ],
+        ans: [0],
+        pts: 1.0,
+        hint: "Multi-Exit Discriminator.",
+        rationale: "Atribut MED (Multi-Exit Discriminator) slouží k tomu, aby sousednímu autonomnímu systému naznačil preferovanou vstupní trasu do našeho AS. Je předáván přes eBGP linky."
+    },
+    {
+        id: 29,
+        q: "V jakém stavu se nachází sousedská vazba protokolu OSPF mezi BDR (Backup Designated Router) a řadovým směrovačem v ethernetovém subnetu, pokud navázání jejich spojení proběhlo bez problémů?",
+        opts: [
+            "Exchange",
+            "Loading",
+            "Full",
+            "Init",
+            "2-Way"
+        ],
+        ans: [2],
+        pts: 1.0,
+        hint: "Řadové směrovače (DROther) plně synchronizují svou databázi s DR i BDR.",
+        rationale: "Směrovače typu DROther dosahují stavu Full s oběma klíčovými uzly v segmentu, tedy jak s Designated Routerem (DR), tak i s Backup Designated Routerem (BDR). Vzájemná vazba mezi dvěma DROther končí ve stavu 2-Way."
+    },
+    {
+        id: 30,
+        q: "Který switch se stane root bridge ve STP?",
+        opts: [
+            "Switch s nejvíce porty",
+            "Switch s nejvyšší prioritou",
+            "Switch s nejnižší MAC adresou",
+            "Switch s nejrychlejším portem"
+        ],
+        ans: [2],
+        pts: 1.0,
+        hint: "Rozhoduje nejnižší Bridge ID (složené z priority a MAC adresy). Při stejné prioritě rozhoduje hardware.",
+        rationale: "Root bridge je volen na základě nejnižšího Bridge ID (BID). Pokud mají přepínače výchozí nebo totožnou prioritu, stává se hlavním bodem topologie switch s nejnižší číselnou hodnotou MAC adresy."
+    },
+    {
+        id: 31,
+        q: "Která adresa je vyžadována v příkazové syntaxi standardního ACL?",
+        opts: [
+            "cílová IP",
+            "cílová MAC",
+            "zdrojová IP",
+            "zdrojová MAC"
+        ],
+        ans: [2],
+        pts: 1.0,
+        hint: "Standardní ACL vyhodnocují pouze původ paketu.",
+        rationale: "Standardní Access Control List filtruje síťový provoz výhradně na základě zdrojové IP adresy."
+    },
+    {
+        id: 32,
+        q: "V jakém stavu se nachází sousedská vazba protokolu OSPF mezi dvěma řadovými směrovači (ne DR nebo BDR) v ethernetovém subnetu, pokud navázání jejich spojení proběhlo bez problémů?",
+        opts: [
+            "Exchange",
+            "Full",
+            "2-Way",
+            "Init"
+        ],
+        ans: [2],
+        pts: 1.0,
+        hint: "DROther směrovače spolu kompletní databáze nesynchronizují.",
+        rationale: "V broadcastových sítích (jako je Ethernet) spolu dva řadové směrovače (DROther) ustaví sousedství, které končí ve stavu 2-Way. Plnou synchronizaci LSA databází (stav Full) provádějí pouze směrem k DR a BDR uzlům."
+    },
+    {
+        id: 33,
+        q: "Který protokol se používá pro označování rámců při trunkingu VLAN?",
+        opts: [
+            "IEEE 802.11ac",
+            "IEEE 802.3af",
+            "IEEE 802.1X",
+            "IEEE 802.1Q"
+        ],
+        ans: [3],
+        pts: 1.0,
+        hint: "Standardní průmyslový zapouzdřovací protokol vkládající 4bajtový tag.",
+        rationale: "Standard IEEE 802.1Q definuje způsob tagování ethernetových rámců za účelem jejich přenosu přes trunk linky mezi síťovými přepínači."
+    },
+    {
+        id: 34,
+        q: "Která tvrzení jsou pravdivá, pokud jde o konvergenci sítě? (2 správné odpovědi)",
+        opts: [
+            "Doba mezi dvěma změnami v topologii sítě se nazývá doba konvergence.",
+            "U link-state směrovacích protokolů je doba konvergence poměrně velká.",
+            "U distance vector směrovacích protokolů je doba konvergence poměrně velká.",
+            "Cílem je dosáhnout dlouhé doby konvergence v síti.",
+            "V okamžiku, kdy všechny směrovače v určité oblasti mají aktuální informace o síťové topologii, dochází ke konvergenci sítě."
+        ],
+        ans: [2, 4],
+        pts: 1.0,
+        hint: "Starší protokoly pracují na principu periodických plných aktualizací.",
+        rationale: "Ke konvergenci dochází tehdy, když se všechny aktivní prvky shodnou na jednotném stavu topologie. Distance-vector protokoly trpí pomalou konvergencí kvůli postupnému šíření změn na základě sousedských informací."
+    }
+];
+
+let data = [], curScore = 0, maxPosScore = 0, solved = 0;
+
+function start() {
+    const qS = document.getElementById('shufQ').checked, aS = document.getElementById('shufA').checked;
+    data = JSON.parse(JSON.stringify(master));
+    if(qS) data.sort(() => Math.random() - 0.5);
+    if(aS) data.forEach(d => {
+        let os = d.opts.map((o,i) => ({t:o, c:d.ans.includes(i)}));
+        os.sort(() => Math.random() - 0.5);
+        d.opts = os.map(o => o.t); d.ans = os.reduce((a,o,i) => {if(o.c) a.push(i); return a;}, []);
+    });
+    document.getElementById('setup').style.display = 'none';
+    renderNav(); renderQuiz();
+}
+
+function renderNav() {
+    const g = document.getElementById('navGrid');
+    g.innerHTML = "";
+    data.forEach((_, i) => {
+        let d = document.createElement('div');
+        d.className = 'nav-item'; d.id = `nav-${i}`;
+        d.innerText = i + 1;
+        d.onclick = () => document.getElementById(`qcard-${i}`).scrollIntoView({behavior:'smooth'});
+        g.appendChild(d);
+    });
+}
+
+function renderQuiz() {
+    const c = document.getElementById('quiz');
+    c.innerHTML = "";
+    data.forEach((d, i) => {
+        let isM = d.ans.length > 1;
+        
+        // Kontrola, zda otázka obsahuje obrázek
+        let imgHtml = d.imageUrl ? `<div style="margin: 15px 0;"><img src="${d.imageUrl}" alt="Obrázek k úloze" style="max-width: 100%; height: auto; border: 1px solid #dadce0; border-radius: 8px;"></div>` : "";
+
+        let card = document.createElement('div');
+        card.className = 'q-card'; card.id = `qcard-${i}`;
+        card.innerHTML = `
+            <div class="q-header">
+                <div class="q-id-box">
+                    <span class="blue-sq-icon" id="sq-${i}" onclick="toggleSquare(${i})"></span>
+                    <span id="num-display-${i}" style="font-weight:bold">${i+1}</span>
+                    <span style="color:#666; margin-left:10px">ID ${d.id}</span>
+                </div>
+                <div style="color:var(--primary); font-weight:bold">${d.pts.toFixed(1)} b</div>
+            </div>
+            <div style="margin-bottom:15px; line-height:1.4">${d.q}</div>
+            ${imgHtml} <div id="opts-${i}" style="margin-top:15px;">
+                ${d.opts.map((o,oi) => `<label class="opt-label"><input type="${isM?'checkbox':'radio'}" name="q${i}" value="${oi}"><span>${o}</span></label>`).join('')}
+            </div>
+            <button class="check-btn" id="btn-${i}" onclick="check(${i})">ODEVZDAT ÚLOHU</button>
+            <div id="feedback-${i}" class="points-feedback"></div>
+        `;
+        c.appendChild(card);
+    });
+}
+
+function toggleSquare(i) {
+    const icon = document.getElementById(`sq-${i}`);
+    const navItem = document.getElementById(`nav-${i}`);
+    const numDisplay = document.getElementById(`num-display-${i}`);
+    icon.classList.toggle('active');
+    navItem.classList.toggle('flagged');
+    const isAct = icon.classList.contains('active');
+    navItem.innerText = isAct ? '?' : i + 1;
+    numDisplay.innerText = isAct ? '?' : i + 1;
+}
+
+function check(i) {
+    const d = data[i], block = document.getElementById(`opts-${i}`);
+    const btn = document.getElementById(`btn-${i}`);
+    if(btn.disabled) return;
+
+    const sel = Array.from(block.querySelectorAll('input:checked')).map(n => parseInt(n.value));
+    
+    // Explicitní odevzdání bez výběru vyhodnotíme jako 0 bodů
+    btn.disabled = true;
+    block.querySelectorAll('input').forEach(inp => inp.disabled = true);
+
+    let correctCount = 0, wrongCount = 0;
+    d.ans.forEach(a => { if(sel.includes(a)) correctCount++; });
+    sel.forEach(s => { if(!d.ans.includes(s)) wrongCount++; });
+
+    let gain = (correctCount - wrongCount) * (d.pts / d.ans.length);
+    if(gain < 0) gain = 0;
+    
+    curScore += gain; maxPosScore += d.pts; solved++;
+
+    const feed = document.getElementById(`feedback-${i}`);
+    feed.style.display = 'block';
+    feed.innerHTML = `Získáno ${gain.toFixed(2)} z ${d.pts} b. <div class="hint-box"><strong>Odůvodnění:</strong> ${d.rationale}</div>`;
+    feed.style.background = (gain >= d.pts * 0.99) ? '#e6f4ea' : gain > 0 ? '#fff4e5' : '#fce8e6';
+
+    let nav = document.getElementById(`nav-${i}`);
+    if(gain >= d.pts * 0.99) nav.classList.add('status-green');
+    else if(gain > 0) nav.classList.add('status-orange');
+    else nav.classList.add('status-red');
+
+    block.querySelectorAll('.opt-label').forEach((l, oi) => {
+        if(d.ans.includes(oi)) l.classList.add('correct');
+        else if(sel.includes(oi)) l.classList.add('wrong');
+    });
+
+    document.getElementById('prog').innerText = `Zodpovězeno: ${solved} / ${data.length}`;
+    document.getElementById('score').innerText = `Body: ${curScore.toFixed(2)} / ${maxPosScore.toFixed(2)}`;
+}
+
+function finishAll() {
+    if(!confirm("Opravdu chcete odevzdat všechny zbývající úlohy?")) return;
+    for(let i=0; i < data.length; i++) {
+        const btn = document.getElementById(`btn-${i}`);
+        if(!btn.disabled) check(i);
+    }
+    const finalScore = (curScore / maxPosScore) * 100;
+    alert(`Test dokončen!\nSkóre: ${curScore.toFixed(2)} / ${maxPosScore.toFixed(2)} (${finalScore.toFixed(1)}%)`);
+    window.scrollTo({top: 0, behavior: 'smooth'});
+}
+</script>
+</body>
+</html>

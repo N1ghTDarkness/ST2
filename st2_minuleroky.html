@@ -1,0 +1,865 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <title>Zkouškový simulátor - ST2</title>
+    <style>
+        :root { --primary: #1a73e8; --bg: #f8f9fa; --text: #202124; --blue-square: #007bff; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; display: flex; height: 100vh; overflow: hidden; }
+        
+        #sidebar { width: 260px; background: #fff; border-right: 1px solid #dadce0; display: flex; flex-direction: column; padding: 15px; overflow-y: auto; }
+        h3 { margin-top: 0; margin-bottom: 10px; font-size: 1.1em; }
+
+        /* Zmenšená mřížka navigace */
+        .nav-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; margin-bottom: 15px; }
+        .nav-item { width: 35px; height: 35px; display: flex; align-items: center; justify-content: center; border: 1px solid #dadce0; border-radius: 4px; cursor: pointer; font-size: 0.85em; font-weight: bold; transition: 0.2s; }
+        .nav-item.flagged { background: var(--blue-square) !important; color: white; border-color: var(--blue-square); }
+        .status-green { background: #e6f4ea; color: #1e8e3e; border-color: #ceead6; }
+        .status-orange { background: #fff4e5; color: #d97706; border-color: #ffe0b2; }
+        .status-red { background: #fce8e6; color: #d93025; border-color: #fad2cf; }
+
+        /* Kompaktní odkazy v sidebaru */
+        .external-links { border-top: 1px solid #eee; padding-top: 10px; margin-top: 5px; }
+        .side-link { display: block; text-decoration: none; color: #5f6368; padding: 6px 10px; margin-bottom: 3px; border-radius: 6px; font-size: 0.8em; transition: 0.1s; border: 1px solid transparent; line-height: 1.2; }
+        .side-link:hover { background: #f1f3f4; border-color: #dadce0; color: var(--primary); }
+        .side-link strong { display: block; color: var(--text); font-size: 0.95em; }
+
+        #main-content { flex: 1; padding: 40px; overflow-y: auto; scroll-behavior: smooth; }
+        .header-stats { position: sticky; top: -40px; background: var(--primary); color: white; padding: 20px; border-radius: 0 0 15px 15px; margin: -40px -40px 30px -40px; display: flex; justify-content: space-between; z-index: 100; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        
+        .q-card { background: #fff; border-radius: 12px; padding: 30px; margin-bottom: 40px; border: 1px solid #dadce0; }
+        .q-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 15px; }
+        
+        .blue-sq-icon { width: 20px; height: 20px; background: var(--blue-square); display: inline-block; cursor: pointer; border-radius: 3px; opacity: 0.3; }
+        .blue-sq-icon.active { opacity: 1; }
+
+        .opt-label { display: flex; align-items: flex-start; padding: 12px; border: 2px solid #eee; border-radius: 10px; margin-bottom: 8px; cursor: pointer; transition: 0.1s; font-size: 0.95em; }
+        .opt-label:hover { border-color: var(--primary); background: #f8fbff; }
+        .opt-label input { margin-right: 12px; margin-top: 4px; transform: scale(1.1); }
+        
+        .correct { background: #e6f4ea !important; border-color: #34a853 !important; }
+        .wrong { background: #fce8e6 !important; border-color: #ea4335 !important; }
+        
+        .check-btn { width: 100%; padding: 15px; background: #2c3e50; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        .submit-all-btn { background: #1a73e8; font-size: 1.1em; margin-top: 20px; margin-bottom: 80px; padding: 18px; }
+        
+        .points-feedback { margin-top: 15px; font-weight: bold; padding: 15px; border-radius: 8px; display: none; line-height: 1.5; font-size: 0.95em; }
+        .hint-box { margin-top: 10px; font-weight: normal; color: #555; font-style: italic; border-top: 1px solid rgba(0,0,0,0.1); padding-top: 10px; }
+
+        #setup { position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 1000; display: flex; align-items: center; justify-content: center; color: white; }
+        .setup-card { background: #202124; padding: 40px; border-radius: 20px; max-width: 450px; width: 90%; text-align: center; border: 1px solid #3c4043; }
+    </style>
+</head>
+<body>
+
+<div id="setup">
+    <div class="setup-card">
+        <h2>Test na ST2 otázky minulé roky</h2>
+        <p>Test na ST2 otázky</p>
+        <div style="text-align:left; margin: 20px 0;">
+            <label><input type="checkbox" id="shufQ"> Náhodné pořadí úloh</label><br><br>
+            <label><input type="checkbox" id="shufA"> Náhodné pořadí odpovědí</label>
+        </div>
+        <button class="check-btn" onclick="start()">SPUSTIT TEST</button>
+    </div>
+</div>
+
+<div id="sidebar">
+    <h3>Navigace</h3>
+    <div id="navGrid" class="nav-grid"></div>
+
+    <div class="external-links">
+        <a href="https://n1ghtdarkness.github.io/VSB-IKT/" class="side-link"><strong>🏠 Domů</strong>Všechny materiály</a>
+        <a href="https://n1ghtdarkness.github.io/PD/" class="side-link"><strong>📡 Přenos dat</strong>Protokoly / Modulace</a>
+        <a href="https://n1ghtdarkness.github.io/MIKT/" class="side-link"><strong>📊 Měření v IKT</strong>Laboratoře / Diag.</a>
+        <a href="https://n1ghtdarkness.github.io/RS/" class="side-link"><strong>📶 Radiové sítě</strong>Bezdrát / Antény</a>
+        <a href="https://n1ghtdarkness.github.io/ST2/" class="side-link"><strong>📶 Síťové technologie 2</strong>Sítě 2</a>
+    </div>
+</div>
+
+<div id="main-content">
+    <div class="header-stats">
+        <div id="prog">Zodpovězeno: 0 / 43</div>
+        <div id="score">Body: 0,00 / 0,00</div>
+    </div>
+    <div id="quiz"></div>
+    <div id="final-anchor">
+        <button class="check-btn submit-all-btn" onclick="finishAll()">ODEVZDAT VŠE A UKONČIT TEST</button>
+    </div>
+</div>
+
+<script>
+
+const master = [
+    {
+        id: 1,
+        q: "Které vrstvy jsou součástí protokolového modelu TCP/IP? (3 správné odpovědi)",
+        opts: [
+            "Relační vrstva",
+            "Vrstva přístupu k síti",
+            "Transportní vrstva",
+            "Prezentační vrstva",
+            "Fyzická vrstva",
+            "Aplikační vrstva"
+        ],
+        ans: [1, 2, 5],
+        pts: 1.0,
+        hint: "TCP/IP model slučuje vrstvy OSI modelu do 4 základních vrstev.",
+        rationale: "Model TCP/IP se skládá ze čtyř vrstev: vrstvy přístupu k síti (Network Access), síťové/internetové vrstvy (Internet), transportní vrstvy (Transport) a aplikační vrstvy (Application)[cite: 2, 3, 4]."
+    },
+    {
+        id: 2,
+        q: "Jak se nazývá rozsah portů služby, které jsou určené pro identifikaci standardizovaných aplikačních protokolů?",
+        opts: [
+            "Dynamické nebo soukromé porty",
+            "Dobře známé porty",
+            "Registrované porty",
+            "Efemérní porty",
+            "Systémové sockety"
+        ],
+        ans: [1],
+        pts: 1.0,
+        hint: "Jedná se o rozsah portů od 0 do 1023.",
+        rationale: "Dobře známé porty (Well-known ports) v rozsahu 0–1023 jsou vyhrazeny pro standardizované systémové služby a základní síťové protokoly (např. HTTP, FTP, SSH)[cite: 6]."
+    },
+    {
+        id: 3,
+        q: "Jak se nazývá pravidlo používané distance vector směrovacími protokoly, podle kterého směrovač neposílá směrovací informaci o určité síti zpět sousednímu směrovači, od kterého se dříve tuto informaci naučil?",
+        opts: [
+            "Poison reverse",
+            "Hold-down timer",
+            "Triggered update",
+            "Split horizon",
+            "Route poisoning"
+        ],
+        ans: [3],
+        pts: 1.0,
+        hint: "Zabraňuje vzniku směrovacích smyček prostým nevracením informací tam, odkud přišly.",
+        rationale: "Split horizon je základní mechanismus distance vector protokolů proti smyčkám; zakazuje směrovači inzerovat cestu zpět přes rozhraní, ze kterého se ji naučil[cite: 10]."
+    },
+    {
+        id: 4,
+        q: "Které z uvedených směrovacích protokolů jsou typu link-state? (2 správné odpovědi)",
+        opts: [
+            "RIPv2",
+            "OSPF",
+            "EIGRP",
+            "IS-IS",
+            "BGP"
+        ],
+        ans: [1, 3],
+        pts: 1.0,
+        hint: "Tyto protokoly staví kompletní mapu topologie sítě pomocí LSA nebo LSP zpráv.",
+        rationale: "Mezi standardní link-state protokoly, které si vyměňují informace o stavu linek a sestavují mapu sítě, patří OSPF a IS-IS[cite: 12]."
+    },
+    {
+        id: 5,
+        q: "Co je pravdivé o výchozím směrování (default routing)? (3 správné odpovědi)",
+        opts: [
+            "Jedná se o formu statického směrování",
+            "Používá se až jako poslední možnost, pokud neexistuje cesta k cíli získaná jiným způsobem",
+            "Dynamické protokoly ho nedokáží propagovat",
+            "Obvykle se používá pro směrování ven ze sítě LAN do WAN.",
+            "Směruje pakety pouze do lokální podsítě",
+            "Využívá masku sítě 255.255.255.255"
+        ],
+        ans: [0, 1, 3],
+        pts: 1.0,
+        hint: "Zápis této cesty je vyjádřen jako 0.0.0.0/0.",
+        rationale: "Výchozí směrování (0.0.0.0/0) je typ statické trasy [cite: 14], který slouží jako poslední instance při nenalezení shody ve směrovací tabulce [cite: 15] a typicky odesílá neznámý provoz z LAN k poskytovateli (WAN)[cite: 16]."
+    },
+    {
+        id: 6,
+        q: "Správný rozsah pro IPv6 prefix 2a0d:c000:abcd::/60 je?",
+        opts: [
+            "2a0d:c000:abcd:0000:0000:0000:0000:0000 - 2a0d:c000:abcd:000f:ffff:ffff:ffff:ffff",
+            "2a0d:c000:abcd:0000:0000:0000:0000:0000 - 2a0d:c000:abcd:00ff:ffff:ffff:ffff:ffff",
+            "2a0d:c000:abcd:0000:0000:0000:0000:0000 - 2a0d:c000:abcd:0007:ffff:ffff:ffff:ffff",
+            "2a0d:c000:abcd:0000:0000:0000:0000:0000 - 2a0d:c000:abcd:0003:ffff:ffff:ffff:ffff",
+            "2a0d:c000:abcd:0000:0000:0000:0000:0000 - 2a0d:c000:abcd:ffff:ffff:ffff:ffff:ffff"
+        ],
+        ans: [0],
+        pts: 1.0,
+        hint: "Prefix /60 nechává poslední 4 bity ve 4. hextetu pro hostitelskou/podsíťovou část (2^4 = 16 hodnot, tj. 0 až f).",
+        rationale: "Prvních 60 bitů je fixních. Čtvrtý hextet 'abcd' má definováno 12 bitů (abf). Poslední číslice hextetu se mění v rozsahu 4 bitů, tedy od 0 do F hexadecimálně[cite: 17]."
+    },
+    {
+        id: 7,
+        q: "Jaký je správný komprimovaný zápis IPv6 adresy 2a0e:0bc0:e0f0:0000:0000:1000:0abc:bcd0 ?",
+        opts: [
+            "2a0e:bc0:e0f0:0:0:1000:abc:bcd",
+            "2a0e:bc0:e0f0::10:abc:bcd0",
+            "2a0e:bc:e0f0::1000:abc:bcd0",
+            "2a0e:bc0:e0f0::1000:abc:bcd0",
+            "2a0e:0bc0:e0f0::1000:0abc:bcd0"
+        ],
+        ans: [3],
+        pts: 1.0,
+        hint: "Vynechejte vedoucí nuly v každém hextetu a nahraďte nejdelší souvislou řadu nul symbolem ::.",
+        rationale: "Vedoucí nuly v blocích se odstraňují (0bc0 -> bc0, 0abc -> abc) a po sobě jdoucí bloky samých nul se nahrazují dvojtečkou '::', což dává zkrácený tvar[cite: 18, 19]."
+    },
+    {
+        id: 8,
+        q: "Kolik sítí /64 lze vytvořit ze síťového prefixu 2a0e:abcd:de0f:e000::/56 ?",
+        opts: [
+            "16",
+            "64",
+            "512",
+            "256",
+            "128"
+        ],
+        ans: [3],
+        pts: 1.0,
+        hint: "Spočítejte rozdíl mezi cílovým a zdrojovým prefixem v bitech: 64 - 56 = 8 bitů.",
+        rationale: "Rozdíl mezi prefixem /64 a /56 je 8 bitů. Počet podsítí získáme umocněním dvou na počet volných bitů, tedy 2^8 = 256 podsítí[cite: 20, 21]."
+    },
+    {
+        id: 9,
+        q: "Jaký je správný prefix pro síťovou masku 255.252.0.0?",
+        opts: [
+            "/16",
+            "/14",
+            "/12",
+            "/10",
+            "/22"
+        ],
+        ans: [1],
+        pts: 1.0,
+        hint: "Sečtěte jedničkové bity: 255 má 8 bitů, 252 má 6 bitů.",
+        rationale: "Maska 255.252.0.0 zapsaná binárně obsahuje osm jedniček v prvním oktetu a šest jedniček ve druhém oktetu (11111100). Celkem se jedná o 14 síťových bitů, tj. prefix /14[cite: 22, 23]."
+    },
+    {
+        id: 10,
+        q: "Doplňte broadcast adresu pro IPv4 síťový prefix 10.0.0.0/22.",
+        opts: [
+            "10.0.1.255",
+            "10.0.255.255",
+            "10.0.0.255",
+            "10.0.3.255",
+            "10.0.2.255"
+        ],
+        ans: [3],
+        pts: 1.0,
+        hint: "Prefix /22 sdružuje 4 třetí oktety (2^(24-22) = 4). Rozsah této sítě je od 10.0.0.0 do 10.0.3.255.",
+        rationale: "Pro síť 10.0.0.0 s maskou /22 (255.255.252.0) sahá rozsah adres hostů přes 4 bloky ve třetím oktetu (0, 1, 2, 3), přičemž poslední adresa je vyhrazena pro všesměrové vysílání (broadcast)[cite: 24, 25]."
+    },
+    {
+        id: 11,
+        q: "Doplňte broadcast adresu pro IPv4 síťový prefix 10.0.0.0/23.",
+        opts: [
+            "10.0.1.255",
+            "10.0.2.255",
+            "10.0.0.255",
+            "10.0.3.255",
+            "10.1.255.255"
+        ],
+        ans: [0],
+        pts: 1.0,
+        hint: "Prefix /23 pokrývá 2 bloky ve třetím oktetu (0 a 1).",
+        rationale: "Maska /23 (255.255.254.0) alokuje 2 bloky adres. Síť začíná na 10.0.0.0 a končí broadcastovou adresou 10.0.1.255[cite: 26, 27]."
+    },
+    {
+        id: 12,
+        q: "Kde se používá pole VLAN ID v Ethernet rámci?",
+        opts: [
+            "Pouze uvnitř směrovací tabulky L3 routeru",
+            "Na všech přístupových (access) portech koncových stanic",
+            "Na trunk linkách",
+            "Na linkách mezi přepínačem a směrovačem, a to pouze na linkách s enkapsulací dot1q",
+            "Na bezdrátových spojích standardu 802.11 b/g"
+        ],
+        ans: [2, 3],
+        pts: 1.0,
+        hint: "Vkládá se do rámce při přenosu přes sběrné linky, které sdružují více VLAN.",
+        rationale: "VLAN ID (součást 802.1Q tagu) se vkládá do rámce při přenosu přes trunk linky mezi přepínači [cite: 28, 29], případně na subrozhraních routerů při implementaci Router-on-a-Stick s dot1q[cite: 30]."
+    },
+    {
+        id: 13,
+        q: "Který protokol používá formu redundance active/active?",
+        opts: [
+            "HSRP",
+            "VRRP",
+            "STP",
+            "GLBP",
+            "LACP"
+        ],
+        ans: [3],
+        pts: 1.0,
+        hint: "Cisco proprietární FHRP protokol, který aktivně rozkládá zátěž pomocí různých virtuálních MAC adres.",
+        rationale: "Na rozdíl od HSRP a VRRP (které jsou primárně active/standby), protokol GLBP (Gateway Load Balancing Protocol) podporuje plné active/active vyvažování zátěže[cite: 31, 32]."
+    },
+    {
+        id: 14,
+        q: "Kolik bitů v MAC adrese je rezervováno pro část NIC (Network Interface Controller)?",
+        opts: [
+            "48 bitů",
+            "16 bitů",
+            "24 bitů",
+            "32 bitů",
+            "8 bitů"
+        ],
+        ans: [2],
+        pts: 1.0,
+        hint: "Jedná se přesně o polovinu celkové délky fyzické adresy.",
+        rationale: "MAC adresa má celkem 48 bitů. Prvních 24 bitů tvoří identifikátor výrobce (OUI) a zbývajících 24 bitů je unikátní identifikátor rozhraní přiřazený výrobcem (NIC)[cite: 33, 34]."
+    },
+    {
+        id: 15,
+        q: "Jakou IP adresu používají koncová zařízení jako výchozí bránu v síti s protokolem HSRP?",
+        opts: [
+            "Fyzickou IP adresu záložního (Standby) směrovače",
+            "Jako IP adresa výchozí brány se používá jedna virtuální IP adresa, která je společná všem směrovačům ve skupině HSRP",
+            "Fyzickou IP adresu aktivního (Active) směrovače",
+            "IP adresu multicastové skupiny 224.0.0.2",
+            "Adresu DNS serveru přidělenou přes DHCP"
+        ],
+        ans: [1],
+        pts: 1.0,
+        hint: "Koncovým zařízením se konfiguruje neměnná adresa reprezentující celou redundantní skupinu.",
+        rationale: "U FHRP protokolů včetně HSRP se jako výchozí brána pro koncové stanice nastavuje sdílená virtuální IP adresa. Provoz pak zpracovává aktuální Active router[cite: 35, 36]."
+    },
+    {
+        id: 16,
+        q: "Jaké síťové operace jsou charakteristické pro fáze PREROUTING a POSTROUTING v paketovém filtru?",
+        opts: [
+            "PREROUTING se využívá pro Destination NAT, POSTROUTING pro Source NAT.",
+            "PREROUTING filtruje pouze odchozí pakety, POSTROUTING příchozí",
+            "Fáze PREROUTING zachytává pakety ještě před směrovacím rozhodnutím, fáze POSTROUTING zachytává pakety těsně před tím, než opustí router",
+            "PREROUTING mění TTL paketu, POSTROUTING kontroluje kontrolní součet",
+            "Obě fáze slouží výhradně pro inspekci aplikačních stavů TCP spojení"
+        ],
+        ans: [0, 2],
+        pts: 1.0,
+        hint: "Sledujte logické umístění fází v architektuře Netfilter (před a po určení cesty paketu).",
+        rationale: "Fáze PREROUTING zpracovává paket před směrováním, což je ideální pro změnu cílové adresy (DNAT)[cite: 38, 39]. POSTROUTING nastává těsně před odesláním paketu z rozhraní, což se používá pro změnu zdrojové adresy (SNAT)[cite: 38, 39]."
+    },
+    {
+        id: 17,
+        q: "Kterou adresu při své činnosti posuzuje bezpečnostní nástroj port security?",
+        opts: [
+            "Cílovou IP adresu",
+            "Zdrojovou IP adresu",
+            "Cílovou MAC adresu",
+            "Zdrojovou MAC adresu.",
+            "Identifikátor VLAN ID (802.1Q tag)"
+        ],
+        ans: [3],
+        pts: 1.0,
+        hint: "Nástroj mapuje příchozí rámce na portu a sleduje, kdo je odesílá.",
+        rationale: "Port security na přepínačích analyzuje zdrojovou MAC adresu přicházejících ethernetových rámců a porovnává ji s povoleným limitem či tabulkou statických/bezpečných adres[cite: 40, 41]."
+    },
+    {
+        id: 18,
+        q: "Kolik různých VLAN lze teoreticky vytvořit na přepínači?",
+        opts: [
+            "1024",
+            "4096",
+            "2048",
+            "65536",
+            "256"
+        ],
+        ans: [1],
+        pts: 1.0,
+        hint: "Hodnota vyplývá z velikosti pole VLAN ID v tagu standardu 802.1Q, které má 12 bitů (2^12).",
+        rationale: "Pole VLAN ID má v záhlaví velikost 12 bitů, což umožňuje definovat teoreticky 4096 unikátních identifikátorů VLAN (hodnoty 0 a 4095 jsou vyhrazené)[cite: 42, 43]."
+    },
+    {
+        id: 19,
+        q: "Který typ veřejné IP adresy je na vnějším rozhraní směrovače, který vykonává NAT?",
+        opts: [
+            "Inside local",
+            "Outside local",
+            "Inside global",
+            "Outside global",
+            "Virtual global"
+        ],
+        ans: [2],
+        pts: 1.0,
+        hint: "Reprezentuje vnitřního hosta transformovaného pro zobrazení ve vnějším světě (veřejná síť).",
+        rationale: "V Cisco terminologii NATu je 'Inside Global' veřejná nebo globálně směrovatelná IP adresa reprezentující vnitřní zařízení směrem do internetu/vnější sítě[cite: 44, 45]."
+    },
+    {
+        id: 20,
+        q: "Které bezpečnostní nástroje používají koncept důvěryhodných (trusted) a nedůvěryhodných (untrusted) rozhraní? (2 správné odpovědi)",
+        opts: [
+            "Port security",
+            "DHCP Snooping",
+            "STP BPDU Guard",
+            "Dynamic ARP Inspection",
+            "802.1X Authentication"
+        ],
+        ans: [1, 3],
+        pts: 1.0,
+        hint: "Chrání před podvrženými DHCP servery a nelegitimními ARP odpověďmi.",
+        rationale: "Jak DHCP Snooping (filtrace DHCP zpráv), tak DAI (Dynamic ARP Inspection – kontrola ARP zpráv) vyžadují, aby správce explicitně definoval důvěryhodné porty, přes které mohou procházet systémové zprávy[cite: 46, 47]."
+    },
+    {
+        id: 21,
+        q: "Který příkaz zruší funkční aplikaci ACL 102 z rozhraní podle konfigurace (odstraní vazbu filtru na směr provozu)?",
+        opts: [
+            "no access-list 102 outbound",
+            "clear ip access-list extended 102",
+            "no ip access-group 102 out",
+            "no access-group 102 inbound",
+            "Switch(config)# no vlan 102"
+        ],
+        ans: [2],
+        pts: 1.0,
+        hint: "Filtr je aplikován na odchozím rozhraní příkazem 'ip access-group X out'.",
+        rationale: "Výpis ukazuje 'Outgoing access list is 102' na rozhraní FastEthernet0/0. Odstranění vazby tohoto filtru z rozhraní se provádí příkazem 'no ip access-group 102 out' v konfiguračním režimu daného rozhraní[cite: 48, 49]."
+    },
+    {
+        id: 22,
+        q: "Co je nativní VLAN?",
+        opts: [
+            "VLAN rezervovaná výhradně pro management přepínače",
+            "VLAN, která nepoužívá značkování na trunk linkách",
+            "Výchozí VLAN, do které patří všechny porty při prvním spuštění",
+            "VLAN určená pro směrování multicastového provozu",
+            "Speciální VLAN pro propojování Cisco IP telefonů"
+        ],
+        ans: [1],
+        pts: 1.0,
+        hint: "Rámce této specifické VLAN procházejí trunkem v původní podobě bez 802.1Q hlavičky.",
+        rationale: "Nativní VLAN (Native VLAN) je definována na trunk portech; rámce, které do ní patří, se přenášejí v neoznačeném (untagged) stavu[cite: 50, 51]."
+    },
+    {
+        id: 23,
+        q: "Co je funkcionalita overload v nastavení NAT na Cisco směrovačích?",
+        opts: [
+            "Vypnutí NAT tabulky při přetížení procesoru",
+            "Statické mapování typu 1:1 pro servery",
+            "Aktivace tzv. PAT (Port Address Translation)",
+            "Alokace celého subnetu veřejných IP adres pro jedno zařízení",
+            "Způsob blokování provozu překračující šířku pásma"
+        ],
+        ans: [2],
+        pts: 1.0,
+        hint: "Umožňuje sdílet jednu jedinou veřejnou IP adresu mnoha koncovým stanicím rozlišením zdrojových portů.",
+        rationale: "Klíčové slovo 'overload' v příkazu 'ip nat inside source' zapíná Port Address Translation (PAT), což umožňuje mapovat více privátních IP adres na jedinou veřejnou IP adresu[cite: 52, 53]."
+    },
+    {
+        id: 24,
+        q: "Jaký parametr nacházející se v TCP záhlaví udává, kolik bajtů dat může být odesláno bez čekání na jejich potvrzení příjemcem?",
+        opts: [
+            "Sequence Number",
+            "Acknowledgment Number",
+            "Window",
+            "Checksum",
+            "Urgent Pointer"
+        ],
+        ans: [2],
+        pts: 1.0,
+        hint: "Slouží k řízení toku dat (flow control) a jeho velikost se může dynamicky měnit.",
+        rationale: "Pole Window (velikost okna) v TCP hlavičce definuje množství dat (v bajtech), které může odesílatel přenést, aniž by obdržel potvrzení (ACK) od příjemce[cite: 71, 72]."
+    },
+    {
+        id: 25,
+        q: "Který nástroj způsobí okamžité přepnutí rozhraní přepínače do stavu „forwarding“ (přiřazení portu edge statusu), čímž se urychlí konvergence sítě STP?",
+        opts: [
+            "BPDU Filter",
+            "Root Guard",
+            "UplinkFast",
+            "PortFast",
+            "Loop Guard"
+        ],
+        ans: [3],
+        pts: 1.0,
+        hint: "Aplikuje se výhradně na přístupové (access) porty připojené ke koncovým stanicím.",
+        rationale: "Funkce PortFast obchází standardní naslouchací (listening) a učící se (learning) stavy STP a okamžitě uvádí port do stavu předávání (forwarding), což eliminuje prodlevu při připojení PC[cite: 73, 74]."
+    },
+    {
+        id: 26,
+        q: "K realizaci směrování (procesu přeposílání paketů na L3) směrovač NEPROVÁDÍ: (2 správné odpovědi)",
+        opts: [
+            "Výběr nejvhodnějšího směrovacího protokolu, který bude směrovač používat, na základě hodnoty administrativní vzdálenosti",
+            "Změnu zdrojové a cílové IP adresy v IP hlavičce v každém skoku (hopu)",
+            "Vytvoření záznamů ve směrovací tabulce směrovače na základě informací ze zpráv směrovacích protokolů",
+            "Dekapsulaci a opětovnou enkapsulaci L2 rámce při přechodu mezi rozhraními",
+            "Porovnávání cílové IP adresy paketu se záznamy v tabulce za účelem nalezení nejdelší shody prefixu"
+        ],
+        ans: [0, 1],
+        pts: 1.0,
+        hint: "Směrovač nemění IP adresy (pokud neběží NAT) a administrativní vzdálenost slouží k výběru tras do tabulky, nikoli k výběru protokolu, který má běžet.",
+        rationale: "Směrovač nevolí směrovací protokoly na základě AD (AD pouze určuje prioritu tras pocházejících z různých běžících protokolů) [cite: 77] a při standardním směrování zásadně nemění IP adresy v IP hlavičce (mění se L2 adresy)[cite: 76]."
+    },
+    {
+        id: 27,
+        q: "Co je pravdivé o oblastech (areas) v rámci protokolu OSPF? (3 správné odpovědi)",
+        opts: [
+            "Všechny oblasti musí být přímo propojeny s páteřní oblastí (Area 0)",
+            "Směrovač typu ABR se nachází uvnitř jedné jediné nepáteřní oblasti",
+            "Mezi jednotlivými oblastmi jsou vyměňovány pouze sumarizované topologické informace",
+            "ABR je směrovač na pomezí páteřní a nepáteřní oblasti",
+            "prostřednictvím páteřní oblasti jsou propojeny mezi sebou ostatní oblasti",
+            "Každá oblast musí obsahovat minimálně jeden DR a jeden BDR směrovač"
+        ],
+        ans: [2, 3, 4],
+        pts: 1.0,
+        hint: "Zaměřte se na funkci páteřní zóny a definici hraničního routeru (Area Border Router).",
+        rationale: "OSPF rozděluje síť na hierarchické oblasti. Area 0 propojuje ostatní oblasti [cite: 82], ABR leží na hranici zón a generuje LSA typu 3 [cite: 81], což redukuje množství přenášených detailů topologie (vyměňují se sumarizované informace)[cite: 80]."
+    },
+    {
+        id: 28,
+        q: "Který bezpečnostní nástroj ochrání LAN síť před připojením nepovoleného a tím potenciálně nebezpečného přepínače k jinému povolenému přepínači?",
+        opts: [
+            "DHCP Snooping",
+            "Dynamic ARP Inspection",
+            "IP Source Guard",
+            "BPDU Guard",
+            "Port Security s režimem Restrict"
+        ],
+        ans: [3],
+        pts: 1.0,
+        hint: "Tento nástroj zablokuje (err-disable) port, pokud na něj dorazí zpráva protokolu Spanning Tree (BPDU).",
+        rationale: "BPDU Guard chrání STP topologii tím, že okamžitě vypne port (uvede do err-disable), pokud zachytí STP BPDU rámec, což značí pokus o připojení nepovoleného přepínače do sítě[cite: 93, 94]."
+    },
+    {
+        id: 29,
+        q: "Správný rozsah pro IPv6 prefix 2a0d:c000:abcd::/61 je?",
+        opts: [
+            "2a0d:c000:abcd:0000:0000:0000:0000:0000 - 2a0d:c000:abcd:000f:ffff:ffff:ffff:ffff",
+            "2a0d:c000:abcd:0000:0000:0000:0000:0000 - 2a0d:c000:abcd:0007:ffff:ffff:ffff:ffff",
+            "2a0d:c000:abcd:0000:0000:0000:0000:0000 - 2a0d:c000:abcd:0003:ffff:ffff:ffff:ffff",
+            "2a0d:c000:abcd:0000:0000:0000:0000:0000 - 2a0d:c000:abcd:0001:ffff:ffff:ffff:ffff",
+            "2a0d:c000:abcd:0000:0000:0000:0000:0000 - 2a0d:c000:abcd:007f:ffff:ffff:ffff:ffff"
+        ],
+        ans: [1],
+        pts: 1.0,
+        hint: "Maska /61 alokuje 3 bity v posledním znaku 4. hextetu (2^3 = 8 hodnot, tedy hexadecimálně rozsah 0-7).",
+        rationale: "Prefix /61 fixuje prvních 61 bitů adresy. Ve čtvrtém bloku zbývají pro podsíť/hosty 3 bity na pozici čtvrté číslice (0000 až 0111 binárně), což dává rozsah od 0000 do 0007[cite: 90, 172]."
+    },
+    {
+        id: 30,
+        q: "Doplňte broadcast adresu pro IPv4 síťový prefix 10.0.0.0/27.",
+        opts: [
+            "10.0.0.15",
+            "10.0.0.255",
+            "10.0.0.31",
+            "10.0.0.63",
+            "10.0.0.32"
+        ],
+        ans: [2],
+        pts: 1.0,
+        hint: "Maska /27 dělí oktet na bloky o velikosti 32 adres (2^(32-27) = 32).",
+        rationale: "Síť s prefixem /27 obsahuje 32 IP adres (od 10.0.0.0 do 10.0.0.31). Poslední adresa rozsahu .31 je adresa všesměrového vysílání[cite: 106, 107]."
+    },
+    {
+        id: 31,
+        q: "Které protokoly pro zajištění redundantní výchozí brány nepodporují nativní aktivní vyvažování zátěže (load balancing) v rámci jedné skupiny a provoz směrují pouze přes jeden aktivní prvek?",
+        opts: [
+            "GLBP a SLB",
+            "HSRP a VRRP",
+            "STP a RSTP",
+            "LACP a PAGP",
+            "OSPF a EIGRP"
+        ],
+        ans: [1],
+        pts: 1.0,
+        hint: "Tyto protokoly fungují na principu určení jednoho hlavního směrovače (Active/Master) a jednoho záložního (Standby/Backup).",
+        rationale: "HSRP a VRRP ustavují vztahy, kde v jeden okamžik odbavuje pakety zaslané na virtuální IP pouze jeden vybraný router. Druhý čeká v záloze, nevyvažují tedy zátěž aktivně[cite: 110, 111, 120, 121]."
+    },
+    {
+        id: 32,
+        q: "Doplňte broadcast adresu pro IPv4 síťový prefix 10.0.0.0/25.",
+        opts: [
+            "10.0.0.63",
+            "10.0.0.127",
+            "10.0.0.255",
+            "10.0.0.128",
+            "10.0.1.127"
+        ],
+        ans: [1],
+        pts: 1.0,
+        hint: "Prefix /25 rozděluje poslední oktet přesně na dvě poloviny (bloky po 128 adresách).",
+        rationale: "Rozsah první podsítě s maskou /25 (255.255.255.128) je 10.0.0.0 až 10.0.0.127. Poslední adresa .127 funguje jako broadcast podsítě[cite: 112, 113]."
+    },
+    {
+        id: 33,
+        q: "Pro prefix /16 v IPv4 adresním prostoru je možno pomocí třídního (classful) adresování vytvořit?",
+        opts: [
+            "254 hostů",
+            "16382 hostů",
+            "65536 hostů",
+            "65534 hostů",
+            "1024 hostů"
+        ],
+        ans: [3],
+        pts: 1.0,
+        hint: "Vyjádřete počet hostů vzorcem 2^n - 2, kde n je 16 bitů.",
+        rationale: "Prefix /16 (odpovídající třídě B) vyčleňuje pro koncová zařízení 16 bitů. Celkový počet adres je 2^16 = 65536, po odečtení adresy sítě a broadcastu získáme 65534 adres pro hosty[cite: 116, 117, 142, 143]."
+    },
+    {
+        id: 34,
+        q: "Jaké informace v sobě zahrnuje síťový socket? (3 správné odpovědi)",
+        opts: [
+            "Zdrojovou MAC adresu",
+            "IP adresa",
+            "Číslo portu služby",
+            "Hodnotu TTL (Time to Live)",
+            "Typ transportního protokolu",
+            "VLAN ID značku"
+        ],
+        ans: [1, 2, 4],
+        pts: 1.0,
+        hint: "Socket jednoznačně definuje koncový bod síťové komunikace pro aplikaci na transportní vrstvě.",
+        rationale: "Síťový socket je programové rozhraní tvořené kombinací IP adresy uzlu, čísla portu dané služby a specifikací protokolu (TCP nebo UDP)[cite: 118, 119]."
+    },
+    {
+        id: 35,
+        q: "Co je definováno příkazem ip nat pool při konfiguraci dynamického NATu na Cisco směrovačích?",
+        opts: [
+            "Seznam vnitřních IP adres, které mají zakázaný přístup",
+            "Rozsah vnitřních privátních IP adres (Inside Local)",
+            "Rozsah globálních IP adres",
+            "Maximální počet povolených současných TCP relací",
+            "IP adresa cílového aplikačního serveru"
+        ],
+        ans: [2],
+        pts: 1.0,
+        hint: "Tento fond (pool) obsahuje veřejné IP adresy pronajaté od ISP, které router přiděluje zařízením procházejícím ven.",
+        rationale: "Příkaz 'ip nat pool' definuje množinu/rozsah vnějších veřejných IP adres (Inside Global), které budou využity pro transformaci zdrojových adres z vnitřní sítě[cite: 124, 125]."
+    },
+    {
+        id: 36,
+        q: "Co určuje síťová maska v IPv4?",
+        opts: [
+            "Přenosovou rychlost a propustnost rozhraní",
+            "Fyzickou MAC adresu nejbližší výchozí brány",
+            "Určuje kolik bitů bude použito pro část sítě a kolik bitů pro hosty",
+            "Celkový počet směrovačů na cestě k cíli (Hop count)",
+            "Typ enkapsulace linkové vrstvy (HDLC / PPP)"
+        ],
+        ans: [2],
+        pts: 1.0,
+        hint: "Maska odděluje síťový identifikátor od identifikátoru koncového hosta pomocí sekvence jedniček a nul.",
+        rationale: "Síťová maska rozděluje 32bitovou IPv4 adresu na dvě části: pevně určuje hranici, kde končí identifikace sítě a kde začíná adresace konkrétního zařízení (hosta)[cite: 126, 128]."
+    },
+    {
+        id: 37,
+        q: "Co je pravdivé o stavovém paketovém filtru (firewallu) ve srovnání s bezstavovým?",
+        opts: [
+            "Stavový firewall filtruje provoz čistě podle statických ACL pravidel bez vazby na minulost",
+            "stavový paketový filtr využívá vlastnosti TCP vrstvy a procesu 3-way handshake,",
+            "Dokáže analyzovat pouze pole v L2 hlavičce ethernetového rámce",
+            "stavový firewall neumí pracovat s protokolem UDP",
+            "Pracuje výhradně na aplikační vrstvě jako proxy server"
+        ],
+        ans: [1, 3],
+        pts: 1.0,
+        hint: "Sleduje průběh navazování spojení TCP, ale u bezstavových protokolů jako UDP nedokáže sledovat reálné fáze relace.",
+        rationale: "Stavový filtr monitoruje stavy připojení, k čemuž využívá TCP synchronizaci a třícestné podání ruky (3-way handshake)[cite: 58, 138, 141]. Protože UDP nemá stavy, práce s ním je pro čistě stavové mechanismy omezená (eviduje se jen časový pseudostav)[cite: 59, 141]."
+    },
+    {
+        id: 38,
+        q: "Jakým způsobem standardně prochází paket pravidly v řetězci (chain) na firewallu (např. iptables / MikroTik)?",
+        opts: [
+            "Paket se porovná se všemi pravidly současně (paralelně) a vybere se to nejsložitější",
+            "Pravidla se ignorují, pokud paket pochází z důvěryhodného rozhraní",
+            "Pravidla se procházejí od konce k začátku tabulky",
+            "Postupně, pokud je shoda, tak se další pravidla dále na paket neaplikují",
+            "Paket prochází vždy všemi pravidly bez ohledu na shodu kvůli zapsání do logu"
+        ],
+        ans: [3],
+        pts: 1.0,
+        hint: "Pravidla se zpracovávají sekvenčně (shora dolů). První odpovídající pravidlo určí osud paketu (Match & Action).",
+        rationale: "Firewally zpracovávají pravidla postupně od prvního k poslednímu. Jakmile dojde ke shodě vlastností paketu s podmínkou pravidla, provede se akce (např. ACCEPT/DROP) and zpracování v daném řetězci končí[cite: 167, 169]."
+    },
+    {
+        id: 39,
+        q: "Pokud pořídíte výpis konfigurace přepínače příkazem 'show vlan brief' a v tabulce chybí rozhraní GigabitEthernet0/1 a GigabitEthernet0/2, co je pravděpodobnou příčinou?",
+        opts: [
+            "Tato rozhraní jsou softwarově vypnutá administrativním příkazem 'shutdown'",
+            "K rozhraním není fyzicky připojen žádný síťový kabel",
+            "Jsou nakonfigurovány jako trunk (v show vlan brief nejsou vidět)",
+            "Porty byly zablokovány mechanismem Spanning Tree (STP)",
+            "Rozhraní vyhořela v důsledku přepětí v síti"
+        ],
+        ans: [2],
+        pts: 1.0,
+        hint: "Příkaz 'show vlan brief' zobrazuje pouze porty v režimu access přiřazené ke konkrétním VLANám.",
+        rationale: "V Cisco IOS se trunkové porty nezobrazují ve výstupu příkazu 'show vlan brief'. Informace o nich je nutné ověřit specifickým příkazem 'show interfaces trunk'[cite: 176, 178]."
+    },
+    {
+        id: 40,
+        q: "Jak se nazývá mechanismus, při kterém směrovač po obdržení zprávy o nedostupnosti sítě (nebo při zvýšení metriky na nekonečno) ignoruje jakékoli nové alternativní cesty pro tuto síť od ostatních sousedů po pevně stanovenou dobu?",
+        opts: [
+            "Split horizon timer",
+            "Triggered update interval",
+            "Hold-down timer",
+            "LSA refresh delay",
+            "Poison reverse time"
+        ],
+        ans: [2],
+        pts: 1.0,
+        hint: "Tento časovač stabilizuje síť a dává čas na ustálení topologie (konvergenci), aby se zabránilo šíření chybných zpráv.",
+        rationale: "Hold-down timer zajišťuje, že po detekci selhání linky router po určitou dobu odmítá změny trasy ke smazané síti, což zabraňuje předčasnému učení se smyčkových tras[cite: 192, 193]."
+    },
+    {
+        id: 41,
+        q: "Co nejlépe charakterizuje pojem Autonomní systém (AS) v kontextu globálního internetového směrování?",
+        opts: [
+            "Sada serverů běžících výhradně pod operačním systémem Linux",
+            "Reprezentuje skupinu sítí, které jsou pod jednotnou správou a používají jednotnou směrovací strategii",
+            "Zabezpečená lokální podsíť chráněná hardwarovým firewallem",
+            "Označení pro jakékoli síťové rozhraní podporující IPv6",
+            "Jakýkoli autonomně pracující robot v průmyslové síti"
+        ],
+        ans: [1],
+        pts: 1.0,
+        hint: "Jedná se o rozsáhlý technologický celek (např. síť ISP nebo univerzity), který se navenek chová jednotně a komunikuje navenek protokolem BGP.",
+        rationale: "Autonomní systém (AS) je ucelená skupina IP sítí a směrovačů pod kontrolou jedné administrativní entity (např. ISP), sdílející společnou vnitřní směrovací politiku[cite: 195, 199]."
+    },
+    {
+        id: 42,
+        q: "Co je hlavním účelem a vlastností Active Virtual Gateway (AVG) v rámci činnosti protokolu GLBP? (3 správné odpovědi)",
+        opts: [
+            "AVG se používá v rámci činnosti protokolu GLBP",
+            "AVG informuje koncové zařízení o virtuální MAC adrese, kterou má používat při posílání dat na výchozí bránu",
+            "Roli AVG má jeden ze směrovačů ve skupině, který navíc funguje jako forwarder",
+            "AVG funguje výhradně jako pasivní záloha a nesměruje žádná vlastní data",
+            "Zajišťuje šifrování tunelů IPSec mezi pobočkami LAN",
+            "Generuje náhodné zdrojové IP adresy pro klientské stanice"
+        ],
+        ans: [0, 1, 2],
+        pts: 1.0,
+        hint: "AVG odpovídá na ARP dotazy klientů a rozděluje jim jedinečné virtuální MAC adresy ostatních routerů (AVF).",
+        rationale: "V protokolu GLBP volí směrovače jednoho člena do role AVG[cite: 64, 65]. Ten odpovídá na ARP požadavky klientů a přiděluje jim MAC adresy aktivních forwarderů (AVF), čímž vyvažuje zátěž[cite: 66, 67]."
+    },
+    {
+        id: 43,
+        q: "Jaký je výchozí povolený počet zabezpečených MAC adres (default maximum), pokud na rozhraní Cisco přepínače aktivujete nástroj port security bez dalších parametrů?",
+        opts: [
+            "5",
+            "Je jedna - 1",
+            "10",
+            "Bez limitu (dynamické učení)",
+            "24"
+        ],
+        ans: [1],
+        pts: 1.0,
+        hint: "Výchozí stav je nastaven na nejstriktnější možnou hodnotu pro jeden připojený stroj.",
+        rationale: "Pokud zadáte pouze příkaz 'switchport port-security', výchozí nastavení povolí na daném portu registraci přesně jedné (1) MAC adresy[cite: 159, 160]."
+    }
+];
+let data = [], curScore = 0, maxPosScore = 0, solved = 0;
+
+function start() {
+    const qS = document.getElementById('shufQ').checked, aS = document.getElementById('shufA').checked;
+    data = JSON.parse(JSON.stringify(master));
+    if(qS) data.sort(() => Math.random() - 0.5);
+    if(aS) data.forEach(d => {
+        let os = d.opts.map((o,i) => ({t:o, c:d.ans.includes(i)}));
+        os.sort(() => Math.random() - 0.5);
+        d.opts = os.map(o => o.t); d.ans = os.reduce((a,o,i) => {if(o.c) a.push(i); return a;}, []);
+    });
+    document.getElementById('setup').style.display = 'none';
+    renderNav(); renderQuiz();
+}
+
+function renderNav() {
+    const g = document.getElementById('navGrid');
+    g.innerHTML = "";
+    data.forEach((_, i) => {
+        let d = document.createElement('div');
+        d.className = 'nav-item'; d.id = `nav-${i}`;
+        d.innerText = i + 1;
+        d.onclick = () => document.getElementById(`qcard-${i}`).scrollIntoView({behavior:'smooth'});
+        g.appendChild(d);
+    });
+}
+
+function renderQuiz() {
+    const c = document.getElementById('quiz');
+    c.innerHTML = "";
+    data.forEach((d, i) => {
+        let isM = d.ans.length > 1;
+        
+        // Kontrola, zda otázka obsahuje obrázek
+        let imgHtml = d.imageUrl ? `<div style="margin: 15px 0;"><img src="${d.imageUrl}" alt="Obrázek k úloze" style="max-width: 100%; height: auto; border: 1px solid #dadce0; border-radius: 8px;"></div>` : "";
+
+        let card = document.createElement('div');
+        card.className = 'q-card'; card.id = `qcard-${i}`;
+        card.innerHTML = `
+            <div class="q-header">
+                <div class="q-id-box">
+                    <span class="blue-sq-icon" id="sq-${i}" onclick="toggleSquare(${i})"></span>
+                    <span id="num-display-${i}" style="font-weight:bold">${i+1}</span>
+                    <span style="color:#666; margin-left:10px">ID ${d.id}</span>
+                </div>
+                <div style="color:var(--primary); font-weight:bold">${d.pts.toFixed(1)} b</div>
+            </div>
+            <div style="margin-bottom:15px; line-height:1.4">${d.q}</div>
+            ${imgHtml} <div id="opts-${i}" style="margin-top:15px;">
+                ${d.opts.map((o,oi) => `<label class="opt-label"><input type="${isM?'checkbox':'radio'}" name="q${i}" value="${oi}"><span>${o}</span></label>`).join('')}
+            </div>
+            <button class="check-btn" id="btn-${i}" onclick="check(${i})">ODEVZDAT ÚLOHU</button>
+            <div id="feedback-${i}" class="points-feedback"></div>
+        `;
+        c.appendChild(card);
+    });
+}
+
+function toggleSquare(i) {
+    const icon = document.getElementById(`sq-${i}`);
+    const navItem = document.getElementById(`nav-${i}`);
+    const numDisplay = document.getElementById(`num-display-${i}`);
+    icon.classList.toggle('active');
+    navItem.classList.toggle('flagged');
+    const isAct = icon.classList.contains('active');
+    navItem.innerText = isAct ? '?' : i + 1;
+    numDisplay.innerText = isAct ? '?' : i + 1;
+}
+
+function check(i) {
+    const d = data[i], block = document.getElementById(`opts-${i}`);
+    const btn = document.getElementById(`btn-${i}`);
+    if(btn.disabled) return;
+
+    const sel = Array.from(block.querySelectorAll('input:checked')).map(n => parseInt(n.value));
+    
+    // Explicitní odevzdání bez výběru vyhodnotíme jako 0 bodů
+    btn.disabled = true;
+    block.querySelectorAll('input').forEach(inp => inp.disabled = true);
+
+    let correctCount = 0, wrongCount = 0;
+    d.ans.forEach(a => { if(sel.includes(a)) correctCount++; });
+    sel.forEach(s => { if(!d.ans.includes(s)) wrongCount++; });
+
+    let gain = (correctCount - wrongCount) * (d.pts / d.ans.length);
+    if(gain < 0) gain = 0;
+    
+    curScore += gain; maxPosScore += d.pts; solved++;
+
+    const feed = document.getElementById(`feedback-${i}`);
+    feed.style.display = 'block';
+    feed.innerHTML = `Získáno ${gain.toFixed(2)} z ${d.pts} b. <div class="hint-box"><strong>Odůvodnění:</strong> ${d.rationale}</div>`;
+    feed.style.background = (gain >= d.pts * 0.99) ? '#e6f4ea' : gain > 0 ? '#fff4e5' : '#fce8e6';
+
+    let nav = document.getElementById(`nav-${i}`);
+    if(gain >= d.pts * 0.99) nav.classList.add('status-green');
+    else if(gain > 0) nav.classList.add('status-orange');
+    else nav.classList.add('status-red');
+
+    block.querySelectorAll('.opt-label').forEach((l, oi) => {
+        if(d.ans.includes(oi)) l.classList.add('correct');
+        else if(sel.includes(oi)) l.classList.add('wrong');
+    });
+
+    document.getElementById('prog').innerText = `Zodpovězeno: ${solved} / ${data.length}`;
+    document.getElementById('score').innerText = `Body: ${curScore.toFixed(2)} / ${maxPosScore.toFixed(2)}`;
+}
+
+function finishAll() {
+    if(!confirm("Opravdu chcete odevzdat všechny zbývající úlohy?")) return;
+    for(let i=0; i < data.length; i++) {
+        const btn = document.getElementById(`btn-${i}`);
+        if(!btn.disabled) check(i);
+    }
+    const finalScore = (curScore / maxPosScore) * 100;
+    alert(`Test dokončen!\nSkóre: ${curScore.toFixed(2)} / ${maxPosScore.toFixed(2)} (${finalScore.toFixed(1)}%)`);
+    window.scrollTo({top: 0, behavior: 'smooth'});
+}
+</script>
+</body>
+</html>

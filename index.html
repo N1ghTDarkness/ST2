@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Síťové technologie - Studijní materiály</title>
+    <style>
+        :root {
+            --primary: #e63946;
+            --secondary: #457b9d;
+            --bg: #f1faee;
+            --card-bg: #ffffff;
+            --text: #1d3557;
+            --accent: #f4a261;
+            --success: #2a9d8f;
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 40px 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        h1 {
+            color: var(--primary);
+            font-size: 2.8rem;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .subtitle {
+            color: var(--secondary);
+            font-size: 1.2rem;
+            font-weight: 500;
+        }
+
+        .section-title {
+            width: 100%;
+            max-width: 900px;
+            margin: 30px 0 15px 0;
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: var(--text);
+            border-bottom: 2px solid var(--accent);
+            padding-bottom: 5px;
+        }
+
+        .container {
+            max-width: 900px;
+            width: 100%;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            transition: all 0.3s ease;
+            text-decoration: none;
+            color: inherit;
+            display: flex;
+            flex-direction: column;
+            border-top: 4px solid var(--secondary);
+        }
+
+        .card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 12px 20px rgba(0,0,0,0.15);
+            border-top-color: var(--primary);
+        }
+
+        .card.exam-card {
+            border-top-color: var(--success);
+            background: #f0fff4;
+        }
+
+        .card h2 {
+            margin: 0 0 10px 0;
+            font-size: 1.3rem;
+        }
+
+        .card p {
+            margin: 0;
+            font-size: 0.9rem;
+            color: #555;
+            line-height: 1.4;
+        }
+
+        .tag {
+            font-size: 0.75rem;
+            font-weight: 800;
+            padding: 3px 8px;
+            border-radius: 5px;
+            background: #eee;
+            width: fit-content;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+        }
+
+        footer {
+            margin-top: 60px;
+            opacity: 0.6;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>ST2</h1>
+        <p class="subtitle">Souhrn materiálů pro zkouškové období</p>
+    </header>
+
+    <div class="section-title">Zkouškový simulátor - ST2</div>
+    <div class="container">
+
+        <a href="st2.html" class="card">
+            <div class="tag">Otázky co byly ukázané na poslední přednášce</div>
+            <h2>Otázky co byly ukázané na poslední přednášce</h2>
+            <p>Otázky co byly ukázané na poslední přednášce</p>
+        </a>
+
+        <a href="ustnizksite.html" class="card">
+            <div class="tag">Ústní zkouška, otázky co měli minulé roky</div>
+            <h2>Ústní zkouška, otázky co měli minulé roky</h2>
+            <p>Ústní zkouška, otázky co měli minulé roky</p>
+        </a>
+
+        <a href="st2_minuleroky.html" class="card">
+            <div class="tag">Minulé roky otázky</div>
+            <h2>Minulé roky otázky</h2>
+            <p>Minulé roky otázky</p>
+        </a>
+    </div>
+
+    <footer>
+        Studijní portál pro ST2 | 2026 &copy; Všechna práva vyhrazena
+    </footer>
+
+</body>
+</html>
